@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 # Set Working directory
 os.chdir('/Users/emmamork/Library/CloudStorage/OneDrive-DanmarksTekniskeUniversitet/Observation Modeling and Management of Water Sytstems/Assigment')
 datafolder=os.path.relpath(r'Data')
- test = np.array([])
+
 ##########read rainfall files
 #define fields in file and datatype for each field
 headers = ['date','time', 'value']
