@@ -4,7 +4,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from LoadData import file_names
 
-#
 df=pd.read_pickle('dataframe.pkl')
 
 

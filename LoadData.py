@@ -1,12 +1,11 @@
 
-
 import os
 import datetime as dt
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 # Set Working directory
-os.chdir('/Users/emmamork/Library/CloudStorage/OneDrive-DanmarksTekniskeUniversitet/Observation Modeling and Management of Water Sytstems/Assigment')
+
 datafolder=os.path.relpath(r'Data')
 
 ##########read rainfall files
