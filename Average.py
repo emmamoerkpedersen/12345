@@ -6,6 +6,7 @@ from LoadData import file_names
 
 df = pd.read_pickle('dataframe.pkl')
 
+test = [1,2,3]
 # Weighted average precipitation
 
 areasP = np.array([865216821,665778630,383284467.2,785339562.5, 131465617.03602804, 170280882.42145243, 150530436.137325912714005])
