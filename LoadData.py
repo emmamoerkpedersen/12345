@@ -77,6 +77,20 @@ flow['date']=[dt.datetime(x.year,x.month,x.day) for x in flow['date']] #remove t
 flow.iloc[:,1]=flow.iloc[:,1]*86400.0 #convert m3/s to m3/d
 flow.iloc[:,1]=flow.iloc[:,1]/area*10**3 # convert to mm/d
 
+#######Read Y1C flow:
+
+area2 = 2149033230.112 #m2
+
+headers = ['date','value']
+dtypes = {'date': 'str', 'value': float}
+#read file
+flowY1C=pd.read_csv(os.path.join(datafolder,'Y1C-Q.txt'),sep=';',skiprows=3,header=None,names=headers,dtype=dtypes)
+flowY1C.iloc[:,0]=pd.to_datetime(flowY1C.iloc[:,0],format='%Y-%m-%d %H:%M:%S')
+flowY1C['date']=[dt.datetime(x.year,x.month,x.day) for x in flowY1C['date']] #remove time information from the flow dates
+flowY1C.iloc[:,1]=flowY1C.iloc[:,1]*86400.0 #convert m3/s to m3/d
+flowY1C.iloc[:,1]=flowY1C.iloc[:,1]/area2*10**3 # convert to mm/d
+
+
 
 ################ TEST HVOR DATA IKKE ER LAVET OM IFT. REGN
 import matplotlib.pyplot as plt
@@ -126,10 +140,10 @@ flow=flow.iloc[np.min(np.where(flow['date']>=startdate)):np.max(np.where(flow['d
 
 from functools import reduce
 #combine textfiles into one dataframes
-data_frames = [refet1, refet2, refet3, refet4, rain1, rain2, rain3, rain4, rain5, rain6, rain7, flow ]
+data_frames = [refet1, refet2, refet3, refet4, rain1, rain2, rain3, rain4, rain5, rain6, rain7, flow, flowY1C ]
 
 data_all = reduce(lambda  left,right: pd.merge(left,right,on='date',how='outer'), data_frames)
-data_all.columns = ['date','PET_351201','PET_330201','PET_328202', 'PET_328201', 'rain_CHHA', 'rain_DCCT', 'rain_TGLG', 'rain_WCHN', 'rain_NMKI', 'rain_MMMO', 'rain_SPPT', 'flow']
+data_all.columns = ['date','PET_351201','PET_330201','PET_328202', 'PET_328201', 'rain_CHHA', 'rain_DCCT', 'rain_TGLG', 'rain_WCHN', 'rain_NMKI', 'rain_MMMO', 'rain_SPPT', 'flow', 'flowY1C']
 
 
 data_all.set_index('date',inplace=True)
@@ -140,7 +154,6 @@ data_all.interpolate(method='linear',inplace=True)
 #####################
 #save dataframe as pickled file
 data_all.to_pickle('dataframe.pkl')
-
 
 
 
