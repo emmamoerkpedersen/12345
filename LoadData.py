@@ -132,6 +132,58 @@ flowY1C=flowY1C.iloc[np.min(np.where(flowY1C['date']>=startdate)):np.max(np.wher
 flow.iloc[:,1]=flow.iloc[:,1]-flowY1C.iloc[:,1]
 
 
+####################
+
+
+
+from functools import reduce
+#combine textfiles into one dataframes
+data_frames = [refet1, refet2, refet3, refet4, rain1, rain2, rain3, rain4, rain5, rain6, rain7, flow, flowY1C ]
+
+data_all = reduce(lambda  left,right: pd.merge(left,right,on='date',how='outer'), data_frames)
+data_all.columns = ['date','PET_351201','PET_330201','PET_328202', 'PET_328201', 'rain_CHHA', 'rain_DCCT', 'rain_TGLG', 'rain_WCHN', 'rain_NMKI', 'rain_MMMO', 'rain_SPPT', 'flow', 'flowY1C']
+
+data_all.set_index('date',inplace=True)
+
+
+data_all.interpolate(method='linear',inplace=True)
+#####################
+#save dataframe as pickled file
+data_all.to_pickle('dataframe.pkl')
+
+
+
+# New dataframe with weighted average
+PET = ['PET_351201','PET_330201','PET_328202', 'PET_328201']
+rain = ['rain_CHHA', 'rain_DCCT', 'rain_TGLG', 'rain_WCHN', 'rain_NMKI', 'rain_MMMO', 'rain_SPPT']
+
+#Calculate average
+areasP = np.array([865216821,665778630,383284467.2,785339562.5, 131465617.03602804, 170280882.42145243, 150530436.137325912714005])
+Pcatchment = pd.DataFrame((areasP[0]*data_all['rain_CHHA']+areasP[1]*data_all['rain_DCCT']+areasP[2]*data_all['rain_MMMO']+areasP[3]*data_all['rain_NMKI']
+                           +areasP[4]*data_all['rain_SPPT']+areasP[5]*data_all['rain_TGLG']+areasP[6]*data_all['rain_WCHN'])/np.sum(areasP), columns = ['value'])
+
+
+areasPET = np.array([632073506, 443472572, 2017865143, 697936853 ])
+PETcatchment = pd.DataFrame((areasPET[0]*data_all['PET_328201']+areasPET[1]*data_all['PET_328202']+areasPET[2]*data_all['PET_330201']+areasPET[3]*data_all['PET_351201'])/np.sum(areasPET), columns = ['value'])
+
+# Create the new dataframe
+data_frames2 = [Pcatchment, PETcatchment, flow, flowY1C]
+data_Average = reduce(lambda  left,right: pd.merge(left,right,on='date',how='outer'), data_frames2)
+data_Average.columns = ['date', 'Precipitation', 'PET', 'flow', 'flowY1C']
+
+data_Average.set_index('date',inplace=True)
+
+
+
+#####################
+#fill remaining missing values by linear interpolation
+#this requires that the data have been properly checked before and that there is no bigger gaps that need to be treated manually!
+data_Average.interpolate(method='linear',inplace=True)
+#####################
+#save dataframe as pickled file
+data_Average.to_pickle('dataframe2.pkl')
+
+
 ###### splitting in train, val and test data
 
 def train_validate_test_split(df, train_percent=.7, validate_percent=.2, seed=None):
@@ -149,27 +201,4 @@ train, validate, test = train_validate_test_split(data_all[182:])
 
 #Combine the 3 series into one dataframe with the same time index
 #rain series is the shortest series, find dates where it starts and ends
-
-####################
-
-
-from functools import reduce
-#combine textfiles into one dataframes
-data_frames = [refet1, refet2, refet3, refet4, rain1, rain2, rain3, rain4, rain5, rain6, rain7, flow, flowY1C]
-
-data_all = reduce(lambda  left,right: pd.merge(left,right,on='date',how='outer'), data_frames)
-data_all.columns = ['date','PET_351201','PET_330201','PET_328202', 'PET_328201', 'rain_CHHA', 'rain_DCCT', 'rain_TGLG', 'rain_WCHN', 'rain_NMKI', 'rain_MMMO', 'rain_SPPT', 'flow', 'flowY1C']
-
-
-data_all.set_index('date',inplace=True)
-#####################
-#fill remaining missing values by linear interpolation
-#this requires that the data have been properly checked before and that there is no bigger gaps that need to be treated manually!
-data_all.interpolate(method='linear',inplace=True)
-#####################
-#save dataframe as pickled file
-data_all.to_pickle('dataframe.pkl')
-
-
-
 
