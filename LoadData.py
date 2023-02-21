@@ -197,7 +197,7 @@ def train_validate_test_split(df, train_percent=.7, validate_percent=.2, seed=No
     test = df.loc[perm[validate_end:]]
     return train, validate, test
 
-train, validate, test = train_validate_test_split(data_all[182:])
+train, validate, test = train_validate_test_split(data_Average[182:])
 
 #Combine the 3 series into one dataframe with the same time index
 #rain series is the shortest series, find dates where it starts and ends
