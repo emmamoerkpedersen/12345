@@ -91,7 +91,6 @@ flowY1C.iloc[:,1]=flowY1C.iloc[:,1]*86400.0 #convert m3/s to m3/d
 flowY1C.iloc[:,1]=flowY1C.iloc[:,1]/area2*10**3 # convert to mm/d
 
 
-
 ################ TEST HVOR DATA IKKE ER LAVET OM IFT. REGN
 import matplotlib.pyplot as plt
 plt.rcParams.update({'font.size': 7})
@@ -115,11 +114,6 @@ ax[6].legend(loc = 'upper right')
 ax[7].legend(loc = 'upper right')
 
 
-
-
-
-
-
 #### Remake so all DataFrames have same time index (compared to rain)
 
 startdate=rain['date'][np.min(np.where(np.logical_not(rain['value'].isna()))[0])]
@@ -132,15 +126,36 @@ refet4=refet4.iloc[np.min(np.where(refet4['date']>=startdate)):np.max(np.where(r
 
 flow=flow.iloc[np.min(np.where(flow['date']>=startdate)):np.max(np.where(flow['date']<=enddate)),:]
 
+flowY1C=flowY1C.iloc[np.min(np.where(flowY1C['date']>=startdate)):np.max(np.where(flowY1C['date']<=enddate)),:]
+
+####### flow Y14 without Y1C
+#flow.iloc[:,1]=flow.iloc[:,1]-flowY1C.iloc[:,1]
+
+
+###### splitting in train, val and test data
+
+def train_validate_test_split(df, train_percent=.7, validate_percent=.2, seed=None):
+    np.random.seed(seed)
+    perm = np.random.permutation(df.index)
+    m = len(df.index)
+    train_end = int(train_percent * m)
+    validate_end = int(validate_percent * m) + train_end
+    train = df.loc[perm[:train_end]]
+    validate = df.loc[perm[train_end:validate_end]]
+    test = df.loc[perm[validate_end:]]
+    return train, validate, test
+
+train, validate, test = train_validate_test_split(data_all[182:])
 
 #Combine the 3 series into one dataframe with the same time index
 #rain series is the shortest series, find dates where it starts and ends
 
-#####################
+####################
+
 
 from functools import reduce
 #combine textfiles into one dataframes
-data_frames = [refet1, refet2, refet3, refet4, rain1, rain2, rain3, rain4, rain5, rain6, rain7, flow, flowY1C ]
+data_frames = [refet1, refet2, refet3, refet4, rain1, rain2, rain3, rain4, rain5, rain6, rain7, flow, flowY1C]
 
 data_all = reduce(lambda  left,right: pd.merge(left,right,on='date',how='outer'), data_frames)
 data_all.columns = ['date','PET_351201','PET_330201','PET_328202', 'PET_328201', 'rain_CHHA', 'rain_DCCT', 'rain_TGLG', 'rain_WCHN', 'rain_NMKI', 'rain_MMMO', 'rain_SPPT', 'flow', 'flowY1C']
@@ -154,6 +169,7 @@ data_all.interpolate(method='linear',inplace=True)
 #####################
 #save dataframe as pickled file
 data_all.to_pickle('dataframe.pkl')
+
 
 
 

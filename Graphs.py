@@ -1,3 +1,4 @@
+#%%
 import os
 import numpy as np
 import pandas as pd
@@ -70,3 +71,4 @@ plt.scatter(df_agg['rain_WCHN'][select],df_agg['flow'][select])
 # Cross correlation
 
 plt.xcorr(df['flow'], df['rain_WCHN'], maxlags = 20)
+# %%
