@@ -14,15 +14,26 @@ data_in=pd.read_pickle('dataframe2.pkl')
 
 ####################################
 print('make sure that only 1D numpy arrays are provided as input to the model functions. NOT pandas objects!!!')
+#Inflow upper zone
 def simple_model(par,pnames,train):
     import lib_model as lb
-    #
+    # Soil storage
     Smaxsoil=par[pnames.index('Smaxsoil')];msoil=par[pnames.index('msoil')];betasoil=par[pnames.index('betasoil')];S0soil=par[pnames.index('S0soil')]
     cf=par[pnames.index('cf')] #crop factor for regulating ET
-    outflow_u,states_u=lb.unit_soil_zone_storage(cf*data_in['PET'].to_numpy(),data_in['Precipitation'].to_numpy(),[Smaxsoil,msoil,betasoil,S0soil],return_ET=False)
+    outflow_u, states_u = lb.unit_soil_zone_storage(cf*train['PET'].to_numpy(),train['Precipitation'].to_numpy(),[Smaxsoil,msoil,betasoil,S0soil],return_ET=False)
+    #####################
+    #add shallow storage
+    Smax_s=par[pnames.index('Smax_s')];PERC=par[pnames.index('PERC')];k0=par[pnames.index('k0')]; k1=par[pnames.index('k1')];S0_s=par[pnames.index('S0_s')]
+    outflow_s, percolation, states_u = lb.unit_hbv_shallow_storage(outflow_u,[Smax_s,PERC,k0,k1,S0_s])
+    #print(outflow_u)
+    #print(len(outflow_u))
+    # add lower storage
+    S0_l = par[pnames.index('S0_l')]; k2 = par[pnames.index('k2')]
+    outflow_l, states_l = lb.unit_hbv_lower_storage(outflow_s,[S0_l,k2]) 
     #
     tp=par[pnames.index('tp')];k=par[pnames.index('k')]
-    streamflow=lb.unit_hydrograph(outflow_u, [tp, k])
+    # Modelling transport
+    streamflow=lb.unit_hydrograph(outflow_u+outflow_s+outflow_l,[tp, k])
     #
     baseflow=par[pnames.index('baseflow')]
     #
@@ -32,20 +43,24 @@ def simple_model(par,pnames,train):
 ####################################
 #define model parameters
 
-p0={'Smaxsoil':100,'msoil':1,'betasoil':2,'cf':0.1,'baseflow':3,'S0soil':1,'tp':2,'k':10}
+p0={'Smaxsoil':1,'msoil':1,'betasoil':2,'cf':0.1,'baseflow':3,'S0soil':1,'tp':2,'k':10, 'Smax_s':1000, 'PERC': 100, 'k0':25, 'k1':10, 'S0_s':0.1,'S0_l':1000, 'k2':1}
+#,'S0shallow':1,'Smaxshallow':100,'k1':10,'k2':10,'PERC':1}
+#pl={}
 #convert dictionary to lists that are used as input to the model function
 pnames=list(p0.keys())
 p0=list(p0.values())
-
 ####################################
 #simulate
-streamflow=simple_model(p0,pnames,data_in)
+streamflow=simple_model(p0,pnames,train)
+
 
 ####################################
 #plot observed and simulated streamflow
 #the observations are in m3/d, we convert to mm/d by dividing with the catchment area and multiplying with 1000
 #do not expect the simulated hydrograph to look very good, the input data here don't really make sense
 
-plt.plot(data_in['flow'].to_numpy(),label='Obs')
+plt.plot(data_in['flowY1C'].to_numpy(),label='Obs')
 plt.plot(streamflow,label='Sim')
 plt.legend()
+
+####################################
