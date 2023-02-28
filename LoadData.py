@@ -193,8 +193,11 @@ def train_validate_test_split(df, train_percent=.7, validate_percent=.2, seed=No
     train_end = int(train_percent * m)
     validate_end = int(validate_percent * m) + train_end
     train = df.loc[perm[:train_end]]
+    train = train.sort_values('date')
     validate = df.loc[perm[train_end:validate_end]]
+    validate = validate.sort_values('date')
     test = df.loc[perm[validate_end:]]
+    test = test.sort_values('date')
     return train, validate, test
 
 train, validate, test = train_validate_test_split(data_Average[182:])
