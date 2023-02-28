@@ -202,3 +202,4 @@ train, validate, test = train_validate_test_split(data_Average[182:])
 #Combine the 3 series into one dataframe with the same time index
 #rain series is the shortest series, find dates where it starts and ends
 
+

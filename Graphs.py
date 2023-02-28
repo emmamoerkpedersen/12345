@@ -33,7 +33,7 @@ ax[5].legend(loc = 'upper right')
 ax[6].legend(loc = 'upper right')
 ax[7].legend(loc = 'upper right')
 
-plt.savefig("/Users/emmamork/Library/CloudStorage/OneDrive-DanmarksTekniskeUniversitet/Observation Modeling and Management of Water Sytstems/Assigment/PrecipitaionvsFlowinmmd.png")
+plt.savefig("C:/Users/magnu/OneDrive/Dokumenter/Kanddidat/2. Semester/Water modelling and observations/Github/12345")
 
 #### SCATTERPLOTS
 
