@@ -1,4 +1,3 @@
-
 import os
 import datetime as dt
 import numpy as np
@@ -128,8 +127,7 @@ flow=flow.iloc[np.min(np.where(flow['date']>=startdate)):np.max(np.where(flow['d
 
 flowY1C=flowY1C.iloc[np.min(np.where(flowY1C['date']>=startdate)):np.max(np.where(flowY1C['date']<=enddate)),:]
 
-####### flow Y14 without Y1C
-flow.iloc[:,1]=flow.iloc[:,1]-flowY1C.iloc[:,1]
+
 
 
 ####################

@@ -21,6 +21,9 @@ def simple_model(par,pnames,train):
     Smaxsoil=par[pnames.index('Smaxsoil')];msoil=par[pnames.index('msoil')];betasoil=par[pnames.index('betasoil')];S0soil=par[pnames.index('S0soil')]
     cf=par[pnames.index('cf')] #crop factor for regulating ET
     outflow_u, states_u = lb.unit_soil_zone_storage(cf*train['PET'].to_numpy(),train['Precipitation'].to_numpy(),[Smaxsoil,msoil,betasoil,S0soil],return_ET=False)
+    # Flow from other Y1C
+    Smax_Y1C=par[pnames.index('Smax_Y1C')];PERC=par[pnames.index('PERC')];k0=par[pnames.index('k0')]; k1=par[pnames.index('k1')];S0_s=par[pnames.index('S0_s')]
+    outflow_Y1C, percolation ,states_Y1C = lb.unit_hbv_shallow_storage(train['flowY1C'].to_numpy(),[Smax_Y1C,PERC,k0,k1,S0_s])
     #####################
     #add shallow storage
     Smax_s=par[pnames.index('Smax_s')];PERC=par[pnames.index('PERC')];k0=par[pnames.index('k0')]; k1=par[pnames.index('k1')];S0_s=par[pnames.index('S0_s')]
@@ -33,7 +36,7 @@ def simple_model(par,pnames,train):
     #
     tp=par[pnames.index('tp')];k=par[pnames.index('k')]
     # Modelling transport
-    streamflow=lb.unit_hydrograph(outflow_u+outflow_s+outflow_l,[tp, k])
+    streamflow=lb.unit_hydrograph(outflow_u+outflow_s+outflow_l+outflow_Y1C,[tp, k])
     #
     baseflow=par[pnames.index('baseflow')]
     #
@@ -43,9 +46,9 @@ def simple_model(par,pnames,train):
 ####################################
 #define model parameters
 # Parameters for running simulations 
-p0={'Smaxsoil':1,'msoil':1,'betasoil':2,'cf':0.1,'baseflow':3,'S0soil':1,'tp':2,'k':10, 'Smax_s':1000, 'PERC': 100, 'k0':250, 'k1':100, 'S0_s':0.1,'S0_l':1000, 'k2':1}
+p0={'Smaxsoil':1,'msoil':1,'betasoil':2,'cf':0.1,'baseflow':3,'S0soil':1,'tp':2,'k':10,'Smax_Y1C':1000, 'PERC': 100, 'k0':250, 'k1':100, 'S0_s':0.1 ,'Smax_s':1000, 'PERC': 100, 'k0':250, 'k1':100, 'S0_s':0.1,'S0_l':1000, 'k2':1}
 # Parameters for optimizing
-pscale ={'Smaxsoil':1,'msoil':1,'betasoil':2,'cf':0.1,'baseflow':3,'S0soil':1,'tp':2,'k':10, 'Smax_s':1000, 'PERC': 100, 'k0':250, 'k1':100, 'S0_s':0.1,'S0_l':1000, 'k2':1}
+pscale = {'Smaxsoil':1,'msoil':1,'betasoil':2,'cf':0.1,'baseflow':3,'S0soil':1,'tp':2,'k':10,'Smax_Y1C':1000, 'PERC': 100, 'k0':250, 'k1':100, 'S0_s':0.1 ,'Smax_s':1000, 'PERC': 100, 'k0':250, 'k1':100, 'S0_s':0.1,'S0_l':1000, 'k2':1}
 #convert dictionary to lists that are used as input to the model function
 pnames=list(p0.keys())
 p0=list(p0.values())
@@ -59,7 +62,7 @@ streamflow=simple_model(p0,pnames,train)
 #the observations are in m3/d, we convert to mm/d by dividing with the catchment area and multiplying with 1000
 #do not expect the simulated hydrograph to look very good, the input data here don't really make sense
 
-plt.plot(train['flowY1C'].to_numpy(),label='Obs')
+plt.plot(train['flow'].to_numpy(),label='Obs')
 plt.plot(streamflow,label='Sim')
 plt.legend()
 
@@ -106,6 +109,6 @@ plt.plot(pred)
 #plot
 fig, ax = plt.subplots(2, 1, sharex=True)
 ax[0].plot(train['Precipitation']);ax[0].set_ylabel('Precipitation')
-ax[1].plot(train['flowY1C'], color = 'red');ax[1].set_ylabel('FlowY1C')
+ax[1].plot(train['flow'], color = 'red');ax[1].set_ylabel('FlowY1C')
 ax[1].plot(pred, color = 'purple')
 ####################################
