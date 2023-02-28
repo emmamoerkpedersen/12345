@@ -22,13 +22,11 @@ def sse(par_scale,pscale,pnames,train):
 ####################################################
 #train = train.reset_index(drop = True)[['Precipitation', 'flow']]
 
-data = pd.read_csv('RainEvent.csv',sep=';',header=None,names=['Rain','Flow'],dtype={'Rain':np.float64,'Flow':np.float64})
-
 #estimate parameters using DDS
 import ddsoptim
 
 
-p0={'Smaxsoil':1,'msoil':1,'betasoil':2,'cf':0.1,'baseflow':3,'S0soil':1,'tp':2,'k':10,'Smax_Y1C':1000, 'PERC': 100, 'k0':250, 'k1':100, 'S0_s':0.1 ,'Smax_s':1000, 'S0_l':1000, 'k2':1}
+p0 = {'Smaxsoil':1,'msoil':1,'betasoil':2,'cf':0.1,'baseflow':3,'S0soil':1,'tp':2,'k':10,'Smax_Y1C':1000, 'PERC': 100, 'k0':250, 'k1':100, 'S0_s':0.1 ,'Smax_s':1000, 'S0_l':1000, 'k2':1}
 # Parameters for optimizing
 pscale = {'Smaxsoil':1,'msoil':1,'betasoil':1,'cf':1,'baseflow':1,'S0soil':1,'tp':1,'k':1,'Smax_Y1C':1, 'PERC': 1, 'k0':1, 'k1':1, 'S0_s':1 ,'Smax_s':1, 'S0_l':1, 'k2':1}
 #convert dictionary to lists that are used as input to the model function
@@ -58,14 +56,17 @@ plt.plot(pd.Series(ssetrace).rolling(50).min().to_numpy())
 
 #generate prediction from the model using the final parameter estimate
 pred=simple_model(par_estimate_unscaled, pnames,train)
+#Add the predicted values to the train data
+train['Predict'] = pred
+
+
 #plot
 import matplotlib.pyplot as plt
 fig, ax = plt.subplots(2, 1, sharex=True)
 ax[0].plot(train['Precipitation']);ax[0].set_ylabel('Rain')
 ax[1].plot(train['flow']);ax[1].set_ylabel('Flow')
-ax[1].plot(pred)
-
-
+ax[1].plot(train['Predict'])
+ax[1].set_xlim(left=pd.to_datetime('2011'))
 
 
 
