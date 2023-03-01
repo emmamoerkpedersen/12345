@@ -111,7 +111,7 @@ ax[4].legend(loc = 'upper right')
 ax[5].legend(loc = 'upper right')
 ax[6].legend(loc = 'upper right')
 ax[7].legend(loc = 'upper right')
-
+plt.show()
 
 #### Remake so all DataFrames have same time index (compared to rain)
 

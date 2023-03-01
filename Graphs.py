@@ -32,7 +32,7 @@ ax[4].legend(loc = 'upper right')
 ax[5].legend(loc = 'upper right')
 ax[6].legend(loc = 'upper right')
 ax[7].legend(loc = 'upper right')
-
+plt.show()
 plt.savefig("C:/Users/magnu/OneDrive/Dokumenter/Kanddidat/2. Semester/Water modelling and observations/Github/12345")
 
 #### SCATTERPLOTS
@@ -62,13 +62,14 @@ timedf_agg=timedf.groupby(['aggr_ind']).tail(1)
 df_agg=df_agg.set_index(timedf_agg['date'])
 # Gathered in monthly resolution
 plt.scatter(df_agg['rain_WCHN'],df_agg['flow'])
+plt.show()
 
 #extract values for summer months (april to november) only and plot
 select=np.logical_and(np.array(df_agg.index.month)>4,np.array(df_agg.index.month)<11)
 # Only summer months
 plt.scatter(df_agg['rain_WCHN'][select],df_agg['flow'][select])
-
+plt.show()
 # Cross correlation
 
 plt.xcorr(df['flow'], df['rain_WCHN'], maxlags = 20)
-# %%
+plt.show()
