@@ -13,20 +13,20 @@ datafolder=os.path.relpath(r'Data')
 data_in=pd.read_pickle('dataframe2.pkl')
 
 ####################################
-print('make sure that only 1D numpy arrays are provided as input to the model functions. NOT pandas objects!!!')
+#print('make sure that only 1D numpy arrays are provided as input to the model functions. NOT pandas objects!!!')
 #Inflow upper zone
-def simple_model(par,pnames,train):
+def simple_model(par,pnames,data_input):
     import lib_model as lb
     # Soil storage
     Smaxsoil=par[pnames.index('Smaxsoil')];msoil=par[pnames.index('msoil')];betasoil=par[pnames.index('betasoil')];S0soil=par[pnames.index('S0soil')]
     cf=par[pnames.index('cf')] #crop factor for regulating ET
-    outflow_u, states_u = lb.unit_soil_zone_storage(cf*train['PET'].to_numpy(),train['Precipitation'].to_numpy(),[Smaxsoil,msoil,betasoil,S0soil],return_ET=False)
+    outflow_u, states_u = lb.unit_soil_zone_storage(cf*data_input['PET'].to_numpy(),data_input['Precipitation'].to_numpy(),[Smaxsoil,msoil,betasoil,S0soil],return_ET=False)
     # Flow from other Y1C
     Smax_Y1C=par[pnames.index('Smax_Y1C')];PERC=par[pnames.index('PERC')];k0=par[pnames.index('k0')]; k1=par[pnames.index('k1')];S0_s=par[pnames.index('S0_s')]
-    outflow_Y1C, percolation ,states_Y1C = lb.unit_hbv_shallow_storage(train['flowY1C'].to_numpy(),[Smax_Y1C,PERC,k0,k1,S0_s])
+    outflow_Y1C, percolation ,states_Y1C = lb.unit_hbv_shallow_storage(data_input['flowY1C'].to_numpy(),[Smax_Y1C,PERC,k0,k1,S0_s])
     #####################
     #add shallow storage
-    Smax_s=par[pnames.index('Smax_s')];PERC=par[pnames.index('PERC')];k0=par[pnames.index('k0')]; k1=par[pnames.index('k1')];S0_s=par[pnames.index('S0_s')]
+    Smax_s=par[pnames.index('Smax_s')]
     outflow_s, percolation, states_u = lb.unit_hbv_shallow_storage(outflow_u,[Smax_s,PERC,k0,k1,S0_s])
     #print(outflow_u)
     #print(len(outflow_u))
@@ -43,72 +43,20 @@ def simple_model(par,pnames,train):
     streamflow=streamflow+baseflow
     return(streamflow)
 
-####################################
-#define model parameters
-# Parameters for running simulations 
-p0={'Smaxsoil':1,'msoil':1,'betasoil':2,'cf':0.1,'baseflow':3,'S0soil':1,'tp':2,'k':10,'Smax_Y1C':1000, 'PERC': 100, 'k0':250, 'k1':100, 'S0_s':0.1 ,'Smax_s':1000, 'PERC': 100, 'k0':250, 'k1':100, 'S0_s':0.1,'S0_l':1000, 'k2':1}
-# Parameters for optimizing
-pscale = {'Smaxsoil':1,'msoil':1,'betasoil':2,'cf':0.1,'baseflow':3,'S0soil':1,'tp':2,'k':10,'Smax_Y1C':1000, 'PERC': 100, 'k0':250, 'k1':100, 'S0_s':0.1 ,'Smax_s':1000, 'PERC': 100, 'k0':250, 'k1':100, 'S0_s':0.1,'S0_l':1000, 'k2':1}
-#convert dictionary to lists that are used as input to the model function
-pnames=list(p0.keys())
-p0=list(p0.values())
-pscale=list(pscale.values())
-####################################
-#simulate
-streamflow=simple_model(p0,pnames,train)
 
-####################################
-#plot observed and simulated streamflow
-#the observations are in m3/d, we convert to mm/d by dividing with the catchment area and multiplying with 1000
-#do not expect the simulated hydrograph to look very good, the input data here don't really make sense
-
-plt.plot(train['flow'].to_numpy(),label='Obs')
-plt.plot(streamflow,label='Sim')
-plt.legend()
-
-
-# Optimise 
-def sse(par_scale,pscale,pnames,train):
+##### SSE ###
+def sse(par_scale,pscale,pnames,data_input):
     #convert the scaled coefficients back to their original values
     par_unscale=[x*y for x,y in zip(par_scale,pscale)]
     #call the model function to generate a prediction for the given set of
     #parameters
-    pred=simple_model(par_unscale, pnames, train)
+    pred=simple_model(par_unscale, pnames, data_input)
     #extract the flow observations and convert them from pandas series
     #to numpy vector (predictions are also generated as numpy vector)
-    flobs= train['flowY1C'].to_numpy()
+    flobs= data_input['flow'].to_numpy()
     flobs=flobs
     sse=np.nansum(np.power(np.subtract(flobs,pred),2))
     print(sse)
     
     
     return sse
-
-theta0=np.array([1,100])
-#parameter scale (guess what order of magnitude each parameter will have)
-scale=np.array([1,10])
-#
-from scipy.optimize import minimize
-p0_scale = [x*y for x,y in zip(p0,pscale)]
-res = minimize(fun=sse, x0=p0_scale, args=(pscale,pnames,train), method='Nelder-Mead', jac=False,options={'disp': True,'maxiter':100})
-
-
-
-#res = minimize(fun=sse, x0=theta0, args=(scale,data), method='Nelder-Mead', jac=False,options={'disp': True,'maxiter':10000})
-par_estimate_unscaled=[x*y for x,y in zip(res.x,pscale)]
-
-
-
-
-#generate prediction from the model using the final parameter estimate
-pred=simple_model(par_estimate_unscaled,pnames,train)
-plt.plot(pred)
-
-
-
-#plot
-fig, ax = plt.subplots(2, 1, sharex=True)
-ax[0].plot(train['Precipitation']);ax[0].set_ylabel('Precipitation')
-ax[1].plot(train['flow'], color = 'red');ax[1].set_ylabel('FlowY1C')
-ax[1].plot(pred, color = 'purple')
-####################################
