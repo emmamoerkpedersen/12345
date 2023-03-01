@@ -9,12 +9,38 @@ import pandas as pd
 
 # DDS
 ## Set starting values, their ranges and scale
-p0={'Smaxsoil':1,'msoil':1,'betasoil':2,'cf':0.1,'baseflow':3,'S0soil':1,'tp':2,'k':10,'Smax_Y1C':1000, 'PERC': 100, 'k0':250, 'k1':100, 'S0_s':0.1 ,'Smax_s':1000, 'S0_l':1000, 'k2':1}
+p0={'Smaxsoil':1,'msoil':1,
+    'betasoil':2,'cf':0.1,
+    'baseflow':3,'S0soil':1,
+    'tp':2,'k':10,'Smax_Y1C':1000, 
+    'PERC': 100, 'k0':250, 'k1':100, 
+    'S0_s':0.1 ,'Smax_s':1000, 
+    'S0_l':1000, 'k2':1}
 #  Parameters for optimizing
-pscale={'Smaxsoil':1,'msoil':1,'betasoil':1,'cf':1,'baseflow':1,'S0soil':1,'tp':1,'k':1,'Smax_Y1C':1, 'PERC': 1, 'k0':1, 'k1':1, 'S0_s':1 ,'Smax_s':1, 'S0_l':1, 'k2':1}
+pscale={'Smaxsoil':1,'msoil':1,
+        'betasoil':1,'cf':1,
+        'baseflow':1,'S0soil':1,
+        'tp':1,'k':1,'Smax_Y1C':1, 
+        'PERC': 1, 'k0':1, 'k1':1, 
+        'S0_s':1 ,'Smax_s':1, 
+        'S0_l':1, 'k2':1}
 #convert dictionary to lists that are used as input to the model function
-pmin={'Smaxsoil':0,'msoil':0.3,'betasoil':2,'cf':0.1,'baseflow':0,'S0soil':0,'tp':24,'k':1,'Smax_Y1C':1, 'PERC': 0, 'k0': 0.5 , 'k1':1, 'S0_s':0.1 ,'Smax_s':0, 'S0_l':11, 'k2':10}
-pmax={'Smaxsoil':200,'msoil':1,'betasoil':20,'cf':1,'baseflow':100,'S0soil':10, 'tp':120,'k':100,'Smax_Y1C':100, 'PERC': 100, 'k0':20, 'k1':100, 'S0_s':10,'Smax_s':100 ,'S0_l':1000, 'k2':100}
+pmin={'Smaxsoil':0,'msoil':0.3,
+      'betasoil':2,'cf':0.1,
+      'baseflow':0,'S0soil':0,
+      'tp':24,'k':1,'Smax_Y1C':1, 
+      'PERC': 0, 'k0': 0.5 , 
+      'k1':1, 'S0_s':0.1 ,
+      'Smax_s':0, 'S0_l':11, 'k2':10}
+
+pmax={'Smaxsoil':200,'msoil':1,
+      'betasoil':20,'cf':1,
+      'baseflow':100,'S0soil':10,
+        'tp':120,'k':100,
+        'Smax_Y1C':100, 'PERC': 100, 
+        'k0':20, 'k1':100, 
+        'S0_s':10,'Smax_s':100,
+        'S0_l':1000, 'k2':100}
 
 pnames=list(p0.keys())
 p0=list(p0.values())
@@ -39,6 +65,15 @@ plt.plot(pd.Series(ssetrace).rolling(50).min().to_numpy())
 pred=simple_model(par_estimate_unscaled, pnames,train)
 #Add the predicted values to the train data
 train['Predict'] = pred
+
+### To get a list of the estimated parameters and their value
+# Zip the names and values together
+estimated_par_zip = zip(pnames, par_estimate_unscaled)
+
+# Create a dictionary comprehension with the name-value tuples
+estimated_par = {pnames: par_estimate_unscaled for pnames, par_estimate_unscaled in estimated_par_zip}
+
+
 
 # Calculate residuals
 residuals = train['Precipitation']-train['Predict']
