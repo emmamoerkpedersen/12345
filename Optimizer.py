@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import ddsoptim
 import pandas as pd
+from scipy.stats import linregress
 
 ####################################################
 
@@ -56,16 +57,11 @@ par_estimate_unscaled,ssetrace=ddsoptim.ddsoptim(sse,p0,pmax,pmin,7500,0.2,True,
 #best parameter value
 np.nanmin(ssetrace)
 #plot how objective function changes during optimization
-ssetrace[ssetrace>2]=2
+#ssetrace[ssetrace>2]=2
 plt.plot(ssetrace)
 #with dds the objective function is very noisy due to random sampling of parameters. we can compute a rolling min to
 #see how the model fit improves with increasing number of iterations
 plt.plot(pd.Series(ssetrace).rolling(50).min().to_numpy())
-
-#generate prediction from the model using the final parameter estimate
-pred=simple_model(par_estimate_unscaled, pnames,train)
-#Add the predicted values to the train data
-train['Predict'] = pred
 
 ### To get a list of the estimated parameters and their value
 # Zip the names and values together
@@ -75,38 +71,30 @@ estimated_par_zip = zip(pnames, par_estimate_unscaled)
 par_estimate_list = {pnames: par_estimate_unscaled for pnames, par_estimate_unscaled in estimated_par_zip}
 
 
+############ Running the model and plotting
+
+## Train data
+
+#generate prediction from the model using the final parameter estimate
+pred=simple_model(par_estimate_unscaled, pnames,train)
+#Add the predicted values to the train data
+train['Predict'] = pred
+
 
 # Calculate residuals
-residuals = train['Precipitation']-train['Predict']
+residuals = train['flow']-train['Predict']
 
-######## PLOTS #######
+
 fig, ax = plt.subplots(3, 1, sharex=True)
 ax[0].plot(train['Precipitation']);ax[0].set_ylabel('Rain')
 ax[1].plot(train['flow']);ax[1].set_ylabel('Flow')
 ax[1].plot(train['Predict'])
 ax[1].set_xlim(left=pd.to_datetime('2011'))
 ax[2].plot(residuals);ax[2].set_ylabel('Residuals')
+plt.suptitle('Train main plot')
 plt.show()
 
-############ Using the model on TEST data
-pred_test=simple_model(par_estimate_unscaled, pnames,test)
-#Add the predicted values to the train data
-test['Predict'] = pred_test
-
-# Calculate residuals
-residuals_test = test['Precipitation']-test['Predict']
- 
-fig, ax = plt.subplots(3, 1, sharex=True)
-ax[0].plot(test['Precipitation']);ax[0].set_ylabel('Rain')
-ax[1].plot(test['flow']);ax[1].set_ylabel('Flow')
-ax[1].plot(test['Predict'])
-ax[1].set_xlim(left=pd.to_datetime('2011'))
-ax[2].plot(residuals);ax[2].set_ylabel('Residuals')
-plt.show()
-
-############ Aggregate the data
-
-#aggregate to monthly resolution TRAIN
+#aggregate to monthly resolution
 #create an index that for each day indicates whether it belongs to the first month, the second month, and so on
 factor=30
 aggr_index=pd.Series(range(int((train.shape[0]+1)/factor)))
@@ -135,32 +123,154 @@ ax[0].plot(train_agg['Precipitation']);ax[0].set_ylabel('Rain')
 ax[1].plot(train_agg['flow']);ax[1].set_ylabel('Flow')
 ax[1].plot(train_agg['Predict'])
 ax[2].plot(residuals_agg);ax[2].set_ylabel('Residuals')
+plt.suptitle('Train aggregated values main plot')
 plt.show()
 
 ###### Scatter aggregated values
+slope, intercept, rvalue, pvalue, stderr = linregress(train_agg['Precipitation'],train_agg['Predict'])
 plt.scatter(train_agg['Precipitation'],train_agg['Predict'])
+plt.plot(train_agg['Precipitation'], slope * train_agg['Precipitation'] + intercept, color='black')
 plt.xlabel('Observed values'); plt.ylabel('Predicted values')
-plt.axline((0,0), slope=0.5, color='k', transform=plt.gca().transAxes)
-plt.title('Aggregated')
+plt.suptitle('Precipitation vs. Predicted flow - Train aggregated')
 plt.show()
-###### Scatter
+###### Scatter not aggregated
+slope, intercept, rvalue, pvalue, stderr = linregress(train['Precipitation'],train['Predict'])
 plt.scatter(train['Precipitation'], train['Predict'])
+plt.plot(train['Precipitation'], slope * train['Precipitation'] + intercept, color='black')
 plt.xlabel('Observed values'); plt.ylabel('Predicted values')
-plt.axline((0,0), slope=0.5, color='k', transform=plt.gca().transAxes)
-plt.title('Not aggregated')
+plt.suptitle('Precipitation vs. Predicted flow - Train not aggregated')
 plt.show()
-
-# Scatter obs. vs. residuals
-residuals = train['Precipitation']-train['Predict']
-plt.scatter(train['Precipitation'], residuals)
-plt.xlabel('Observed values'); plt.ylabel('Predicted values')
-plt.axline((0,0), slope=0.5, color='k', transform=plt.gca().transAxes)
-plt.title('Not aggregated')
-plt.show()
-
 # Scatter obs. vs. residuals aggregated
+slope, intercept, rvalue, pvalue, stderr = linregress(train_agg['Precipitation'],residuals_agg)
 plt.scatter(train_agg['Precipitation'], residuals_agg)
+plt.plot(train_agg['Precipitation'], slope * train_agg['Precipitation'] + intercept, color='black')
 plt.xlabel('Observed values'); plt.ylabel('Predicted values')
-plt.axline((0,0), slope=0.5, color='k', transform=plt.gca().transAxes)
-plt.title('Aggregated')
+plt.suptitle('Precipitation vs. residuals - Train aggregated')
+plt.show()
+# Scatter obs. vs. residuals not aggregated
+residuals = train['Precipitation']-train['Predict']
+slope, intercept, rvalue, pvalue, stderr = linregress(train['Precipitation'],residuals)
+plt.scatter(train['Precipitation'], residuals)
+plt.plot(train['Precipitation'], slope * train['Precipitation'] + intercept, color='black')
+plt.xlabel('Observed values'); plt.ylabel('Predicted values')
+plt.suptitle('Precipitation vs. residuals - Train not aggregated')
+plt.show()
+
+
+########## Validation plots
+#generate prediction from the model using the final parameter estimate
+pred_validate=simple_model(par_estimate_unscaled, pnames,validate)
+#Add the predicted values to the train data
+validate['Predict'] = pred_validate
+
+# Calculate residuals
+residuals_validate = validate['flow']-validate['Predict']
+
+fig, ax = plt.subplots(3, 1, sharex=True)
+ax[0].plot(validate['Precipitation']);ax[0].set_ylabel('Rain')
+ax[1].plot(validate['flow'], label= 'Obs');ax[1].set_ylabel('Flow')
+ax[1].plot(validate['Predict'], label = 'Pred')
+ax[1].set_xlim(left=pd.to_datetime('2019'))
+ax[2].plot(residuals_validate);ax[2].set_ylabel('Residuals')
+plt.suptitle('Validate main plot')
+plt.show()
+
+#### Zoom to peak periods
+fig, ax = plt.subplots(3, 1, sharex=True)
+ax[0].plot(validate['Precipitation']);ax[0].set_ylabel('Rain')
+ax[1].plot(validate['flow']);ax[1].set_ylabel('Flow')
+ax[1].plot(validate['Predict'])
+ax[1].set_xlim(left=pd.to_datetime('2019-05'), right = pd.to_datetime('2019-11'))
+ax[2].plot(residuals_validate);ax[2].set_ylabel('Residuals')
+plt.suptitle('Validate - Peak 1')
+plt.show()
+
+fig, ax = plt.subplots(3, 1, sharex=True)
+ax[0].plot(validate['Precipitation']);ax[0].set_ylabel('Rain')
+ax[1].plot(validate['flow']);ax[1].set_ylabel('Flow')
+ax[1].plot(validate['Predict'])
+ax[1].set_xlim(left=pd.to_datetime('2020-05'), right = pd.to_datetime('2020-10'))
+ax[2].plot(residuals_validate);ax[2].set_ylabel('Residuals')
+plt.suptitle('Validate - Peak 2')
+plt.show()
+
+#aggregate to monthly resolution 
+#create an index that for each day indicates whether it belongs to the first month, the second month, and so on
+factor=30
+aggr_index=pd.Series(range(int((validate.shape[0]+1)/factor)))
+aggr_index=aggr_index.repeat(factor)
+aggr_index=aggr_index.reset_index(drop=True)
+aggr_index.head()
+
+#use this index in a grouping operation. average all values with the same index
+validate=validate.iloc[0:aggr_index.shape[0],:]
+validate['aggr_ind']=aggr_index.values
+validate_agg=validate.groupby(['aggr_ind']).mean()
+
+#get a time index for the aggregated values - we use the last day for each 30 days that are being aggregated
+timevalidate=pd.DataFrame(validate.index)
+timevalidate['aggr_ind']=aggr_index.values
+timevalidate_agg=timevalidate.groupby(['aggr_ind']).tail(1)
+
+#assign this new time index to the aggregated dataframe
+validate_agg=validate_agg.set_index(timevalidate_agg['date'])
+# Gathered in monthly resolution
+residuals_agg_val = validate_agg['Precipitation']-validate_agg['Predict']
+
+# Plot aggregated values
+fig, ax = plt.subplots(3, 1, sharex=True,)
+ax[0].plot(validate_agg['Precipitation']);ax[0].set_ylabel('Rain')
+ax[1].plot(validate_agg['flow']);ax[1].set_ylabel('Flow')
+ax[1].plot(validate_agg['Predict'])
+ax[2].plot(residuals_agg_val);ax[2].set_ylabel('Residuals')
+plt.suptitle('Aggregated validate main plot')
+plt.show()
+
+###### Scatter aggregated values
+
+slope, intercept, rvalue, pvalue, stderr = linregress(validate_agg['Precipitation'],validate_agg['Predict'])
+plt.plot(validate_agg['Precipitation'], slope * validate_agg['Precipitation'] + intercept, color='black')
+plt.scatter(validate_agg['Precipitation'],validate_agg['Predict'])
+plt.xlabel('Observed values'); plt.ylabel('Predicted values')
+plt.suptitle('Precipitation vs. predict - Validate aggregated')
+plt.show()
+###### Scatter not aggregated
+slope, intercept, rvalue, pvalue, stderr = linregress(validate['Precipitation'],validate['Predict'])
+plt.plot(validate['Precipitation'], slope * validate['Precipitation'] + intercept, color='black')
+plt.scatter(validate['Precipitation'], validate['Predict'])
+plt.xlabel('Observed values'); plt.ylabel('Predicted values')
+plt.suptitle('Precipitation vs. predict - Validate not aggregated')
+plt.show()
+# Scatter obs. vs. residuals aggregated
+slope, intercept, rvalue, pvalue, stderr = linregress(validate_agg['Precipitation'],residuals_agg_val)
+plt.plot(validate_agg['Precipitation'], slope * validate_agg['Precipitation'] + intercept, color='black')
+plt.scatter(validate_agg['Precipitation'], residuals_agg_val)
+plt.xlabel('Observed values'); plt.ylabel('Predicted values')
+plt.suptitle('Precipitation vs. residuals - Validate aggregated')
+plt.show()
+# Scatter obs. vs. residuals not aggregated
+slope, intercept, rvalue, pvalue, stderr = linregress(validate['Precipitation'],validate['Predict'])
+plt.plot(validate['Precipitation'], slope * validate['Precipitation'] + intercept, color='black')
+residuals = validate['Precipitation']-validate['Predict']
+plt.scatter(validate['Precipitation'], residuals)
+plt.xlabel('Observed values'); plt.ylabel('Predicted values')
+plt.suptitle('Precipitation vs. residuals - Validate not aggregated')
+plt.show()
+
+
+############ Test plot
+pred_test=simple_model(par_estimate_unscaled, pnames,test)
+#Add the predicted values to the train data
+test['Predict'] = pred_test
+
+# Calculate residuals
+residuals_test = test['flow']-test['Predict']
+ 
+fig, ax = plt.subplots(3, 1, sharex=True)
+ax[0].plot(test['Precipitation']);ax[0].set_ylabel('Rain')
+ax[1].plot(test['flow']);ax[1].set_ylabel('Flow')
+ax[1].plot(test['Predict'])
+ax[1].set_xlim(left=pd.to_datetime('2021'))
+ax[2].plot(residuals_test);ax[2].set_ylabel('Residuals')
+plt.suptitle('Test')
 plt.show()
