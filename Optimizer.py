@@ -11,12 +11,31 @@ from scipy.stats import linregress
 # DDS
 ## Set starting values, their ranges and scale
 p0={'Smaxsoil':1,'msoil':1,
-    'betasoil':2,'cf':0.1,
-    'baseflow':3,'S0soil':1,
-    'tp':2,'k':10,'Smax_Y1C':1000, 
-    'PERC': 100, 'k0':250, 'k1':100, 
-    'S0_s':0.1 ,'Smax_s':1000, 
-    'S0_l':1000, 'k2':1}
+    'betasoil':19,'cf':0.5,
+    'baseflow':3,'S0soil':10,
+    'tp':2,'k':5,'Smax_Y1C':10, 
+    'PERC': 50, 'k0':15, 'k1':50, 
+    'S0_s':1 ,'Smax_s':50, 
+    'S0_l':100, 'k2':99}
+
+
+#convert dictionary to lists that are used as input to the model function
+pmin={'Smaxsoil':10,'msoil':0.3,
+      'betasoil':1,'cf':0.1,
+      'baseflow':0,'S0soil':0,
+      'tp':0,'k':1,'Smax_Y1C':1, 
+      'PERC': 0, 'k0': 0.5 , 
+      'k1':1, 'S0_s':0.1 ,
+      'Smax_s':0, 'S0_l':11, 'k2':5}
+
+pmax={'Smaxsoil':2000,'msoil':10,
+      'betasoil':20,'cf':10,
+      'baseflow':100,'S0soil':1000,
+        'tp':48,'k':10,
+        'Smax_Y1C':100, 'PERC': 100, 
+        'k0':20, 'k1':100, 
+        'S0_s':10,'Smax_s':100,
+        'S0_l':1000, 'k2':100}
 
 #  Parameters for optimizing
 pscale={'Smaxsoil':1,'msoil':1,
@@ -26,23 +45,6 @@ pscale={'Smaxsoil':1,'msoil':1,
         'PERC': 1, 'k0':1, 'k1':1, 
         'S0_s':1 ,'Smax_s':1, 
         'S0_l':1, 'k2':1}
-#convert dictionary to lists that are used as input to the model function
-pmin={'Smaxsoil':10,'msoil':0.3,
-      'betasoil':2,'cf':0.1,
-      'baseflow':0,'S0soil':0,
-      'tp':0,'k':1,'Smax_Y1C':1, 
-      'PERC': 0, 'k0': 0.5 , 
-      'k1':1, 'S0_s':0.1 ,
-      'Smax_s':0, 'S0_l':11, 'k2':10}
-
-pmax={'Smaxsoil':2000,'msoil':10,
-      'betasoil':20,'cf':10,
-      'baseflow':100,'S0soil':1000,
-        'tp':48,'k':10,
-        'Smax_Y1C':100, 'PERC': 100, 
-        'k0':20, 'k1':100, 
-        'S0_s':10,'Smax_s':100,
-        'S0_l':1000, 'k2':2000}
 
 pnames=list(p0.keys())
 p0=list(p0.values())
@@ -58,10 +60,13 @@ par_estimate_unscaled,ssetrace=ddsoptim.ddsoptim(sse,p0,pmax,pmin,7500,0.2,True,
 np.nanmin(ssetrace)
 #plot how objective function changes during optimization
 #ssetrace[ssetrace>2]=2
-plt.plot(ssetrace)
+#plt.plot(ssetrace)
 #with dds the objective function is very noisy due to random sampling of parameters. we can compute a rolling min to
 #see how the model fit improves with increasing number of iterations
 plt.plot(pd.Series(ssetrace).rolling(50).min().to_numpy())
+plt.xlabel('No. of iterations')
+plt.ylabel('SSE Error')
+
 
 ### To get a list of the estimated parameters and their value
 # Zip the names and values together
@@ -89,9 +94,18 @@ fig, ax = plt.subplots(3, 1, sharex=True)
 ax[0].plot(train['Precipitation']);ax[0].set_ylabel('Rain')
 ax[1].plot(train['flow']);ax[1].set_ylabel('Flow')
 ax[1].plot(train['Predict'])
-ax[1].set_xlim(left=pd.to_datetime('2011'))
+ax[1].set_xlim(left=pd.to_datetime('2012'))
 ax[2].plot(residuals);ax[2].set_ylabel('Residuals')
 plt.suptitle('Train main plot')
+plt.show()
+
+fig, ax = plt.subplots(3, 1, sharex=True)
+ax[0].plot(train['Precipitation']);ax[0].set_ylabel('Rain')
+ax[1].plot(train['flow']);ax[1].set_ylabel('Flow')
+ax[1].plot(train['Predict'])
+ax[1].set_xlim(left=pd.to_datetime('2016'), right=pd.to_datetime('2017'))
+ax[2].plot(residuals);ax[2].set_ylabel('Residuals')
+plt.suptitle('Train  zoomed')
 plt.show()
 
 #aggregate to monthly resolution
@@ -126,32 +140,23 @@ ax[2].plot(residuals_agg);ax[2].set_ylabel('Residuals')
 plt.suptitle('Train aggregated values main plot')
 plt.show()
 
-###### Scatter aggregated values
-slope, intercept, rvalue, pvalue, stderr = linregress(train_agg['Precipitation'],train_agg['Predict'])
-plt.scatter(train_agg['Precipitation'],train_agg['Predict'])
-plt.plot(train_agg['Precipitation'], slope * train_agg['Precipitation'] + intercept, color='black')
-plt.xlabel('Observed values'); plt.ylabel('Predicted values')
-plt.suptitle('Precipitation vs. Predicted flow - Train aggregated')
+# Scatter obs. vs. residuals not aggregated
+plt.plot(train['flow'], 1 * train['flow'])
+plt.scatter(train['flow'], train['Predict'])
+plt.xlabel('Observation [mm/day]'); plt.ylabel('Predicted [mm/day]')
+plt.suptitle('Observation vs. Predicted - Train not aggregated')
 plt.show()
-###### Scatter not aggregated
-slope, intercept, rvalue, pvalue, stderr = linregress(train['Precipitation'],train['Predict'])
-plt.scatter(train['Precipitation'], train['Predict'])
-plt.plot(train['Precipitation'], slope * train['Precipitation'] + intercept, color='black')
-plt.xlabel('Observed values'); plt.ylabel('Predicted values')
-plt.suptitle('Precipitation vs. Predicted flow - Train not aggregated')
-plt.show()
+
 # Scatter obs. vs. residuals aggregated
-slope, intercept, rvalue, pvalue, stderr = linregress(train_agg['Precipitation'],residuals_agg)
 plt.scatter(train_agg['Precipitation'], residuals_agg)
-plt.plot(train_agg['Precipitation'], slope * train_agg['Precipitation'] + intercept, color='black')
-plt.xlabel('Observed values'); plt.ylabel('Predicted values')
+plt.xlabel('Precipitation'); plt.ylabel('Residuals')
+plt.axhline(y=0)
 plt.suptitle('Precipitation vs. residuals - Train aggregated')
 plt.show()
 # Scatter obs. vs. residuals not aggregated
 residuals = train['Precipitation']-train['Predict']
-slope, intercept, rvalue, pvalue, stderr = linregress(train['Precipitation'],residuals)
 plt.scatter(train['Precipitation'], residuals)
-plt.plot(train['Precipitation'], slope * train['Precipitation'] + intercept, color='black')
+plt.axhline(y=0)
 plt.xlabel('Observed values'); plt.ylabel('Predicted values')
 plt.suptitle('Precipitation vs. residuals - Train not aggregated')
 plt.show()
@@ -227,33 +232,28 @@ plt.suptitle('Aggregated validate main plot')
 plt.show()
 
 ###### Scatter aggregated values
+# Scatter obs. vs. residuals not aggregated
+slope, intercept, rvalue, pvalue, stderr = linregress(validate['flow'],validate['Predict'])
+plt.plot(validate['flow'], slope * validate['flow'] + intercept)
+plt.scatter(validate['flow'], validate['Predict'])
+plt.xlabel('Observation [mm/day]'); plt.ylabel('Predicted [mm/day]')
+plt.suptitle('Observation vs. Predicted - Validate not aggregated')
+plt.show()
 
-slope, intercept, rvalue, pvalue, stderr = linregress(validate_agg['Precipitation'],validate_agg['Predict'])
-plt.plot(validate_agg['Precipitation'], slope * validate_agg['Precipitation'] + intercept, color='black')
-plt.scatter(validate_agg['Precipitation'],validate_agg['Predict'])
-plt.xlabel('Observed values'); plt.ylabel('Predicted values')
-plt.suptitle('Precipitation vs. predict - Validate aggregated')
-plt.show()
-###### Scatter not aggregated
-slope, intercept, rvalue, pvalue, stderr = linregress(validate['Precipitation'],validate['Predict'])
-plt.plot(validate['Precipitation'], slope * validate['Precipitation'] + intercept, color='black')
-plt.scatter(validate['Precipitation'], validate['Predict'])
-plt.xlabel('Observed values'); plt.ylabel('Predicted values')
-plt.suptitle('Precipitation vs. predict - Validate not aggregated')
-plt.show()
 # Scatter obs. vs. residuals aggregated
 slope, intercept, rvalue, pvalue, stderr = linregress(validate_agg['Precipitation'],residuals_agg_val)
-plt.plot(validate_agg['Precipitation'], slope * validate_agg['Precipitation'] + intercept, color='black')
 plt.scatter(validate_agg['Precipitation'], residuals_agg_val)
-plt.xlabel('Observed values'); plt.ylabel('Predicted values')
+plt.xlabel('Precipitation'); plt.ylabel('Residuals')
+plt.axhline(y=0)
 plt.suptitle('Precipitation vs. residuals - Validate aggregated')
 plt.show()
 # Scatter obs. vs. residuals not aggregated
+# Calculate residuals
+residuals_validate = validate['flow']-validate['Predict']
 slope, intercept, rvalue, pvalue, stderr = linregress(validate['Precipitation'],validate['Predict'])
-plt.plot(validate['Precipitation'], slope * validate['Precipitation'] + intercept, color='black')
-residuals = validate['Precipitation']-validate['Predict']
-plt.scatter(validate['Precipitation'], residuals)
-plt.xlabel('Observed values'); plt.ylabel('Predicted values')
+plt.axhline(y=0)
+plt.scatter(validate['Precipitation'], residuals_validate)
+plt.xlabel('Precipitation'); plt.ylabel('Residuals')
 plt.suptitle('Precipitation vs. residuals - Validate not aggregated')
 plt.show()
 
