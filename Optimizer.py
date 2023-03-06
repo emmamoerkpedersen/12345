@@ -1,13 +1,16 @@
-from SimpleModel import simple_model, sse
-from LoadData import train, test, validate
+from SimpleModel import simple_model, sse, train_validate_test_split
 import numpy as np
 import matplotlib.pyplot as plt
 import ddsoptim
 import pandas as pd
-from scipy.stats import linregress
+
 
 ####################################################
+# Load data
+data_in=pd.read_pickle('dataframe2.pkl')
 
+
+####################################################
 # DDS
 ## Set starting values, their ranges and scale
 p0={'Smaxsoil':10,'msoil':1,
@@ -53,14 +56,14 @@ pscale=list(pscale.values())
 pmin=np.array(list(pmin.values()))
 pmax=np.array(list(pmax.values()))
 
+# Split data into train, validate and test. First half year is warm up hence the index 182
+train, validate, test = train_validate_test_split(data_in[182:])
+
 
 #call ddsoptim - see ddsoptim.py for an explanation of the input arguments
 par_estimate_unscaled,ssetrace=ddsoptim.ddsoptim(sse,p0,pmax,pmin,7500,0.2,True,pscale,pnames,train)
 #best parameter value
 np.nanmin(ssetrace)
-#plot how objective function changes during optimization
-#ssetrace[ssetrace>2]=2
-#plt.plot(ssetrace)
 #with dds the objective function is very noisy due to random sampling of parameters. we can compute a rolling min to
 #see how the model fit improves with increasing number of iterations
 plt.plot(pd.Series(ssetrace).rolling(50).min().to_numpy())
@@ -73,35 +76,23 @@ estimated_par_zip = zip(pnames, par_estimate_unscaled)
 # Create a dictionary comprehension with the name-value tuples
 par_estimate_list = {pnames: par_estimate_unscaled for pnames, par_estimate_unscaled in estimated_par_zip}
 
-
-############ Running the model and plotting
-## Train data
+####################################################
+############ Run the model for train and validation
 #generate prediction from the model using the final parameter estimate
 pred=simple_model(par_estimate_unscaled, pnames,train)
 #Add the predicted values to the train data
 train['Predict'] = pred
 
-# Calculate residuals
-residuals = train['flow']-train['Predict']
+#generate prediction from the model using the final parameter estimate
+pred_validate=simple_model(par_estimate_unscaled, pnames,validate)
+#Add the predicted values to the train data
+validate['Predict'] = pred_validate
 
-fig, ax = plt.subplots(3, 1, sharex=True)
-ax[0].plot(train['Precipitation']);ax[0].set_ylabel('Rain')
-ax[1].plot(train['flow']);ax[1].set_ylabel('Flow')
-ax[1].plot(train['Predict'])
-ax[1].set_xlim(left=pd.to_datetime('2012'))
-ax[2].plot(residuals);ax[2].set_ylabel('Residuals')
-plt.suptitle('Train main plot')
-plt.show()
 
-fig, ax = plt.subplots(3, 1, sharex=True)
-ax[0].plot(train['Precipitation']);ax[0].set_ylabel('Rain')
-ax[1].plot(train['flow']);ax[1].set_ylabel('Flow')
-ax[1].plot(train['Predict'])
-ax[1].set_xlim(left=pd.to_datetime('2016'), right=pd.to_datetime('2017'))
-ax[2].plot(residuals);ax[2].set_ylabel('Residuals')
-plt.suptitle('Train  zoomed')
-plt.show()
+####################################################
+############ Aggregated data both for train and validation
 
+############ Train
 #aggregate to monthly resolution
 #create an index that for each day indicates whether it belongs to the first month, the second month, and so on
 factor=30
@@ -124,6 +115,55 @@ timetrain_agg=timetrain.groupby(['aggr_ind']).tail(1)
 train_agg=train_agg.set_index(timetrain_agg['date'])
 # Gathered in monthly resolution
 residuals_agg = train_agg['Precipitation']-train_agg['Predict']
+
+
+############ Validate
+#aggregate to monthly resolution 
+#create an index that for each day indicates whether it belongs to the first month, the second month, and so on
+factor=30
+aggr_index=pd.Series(range(int((validate.shape[0]+1)/factor)))
+aggr_index=aggr_index.repeat(factor)
+aggr_index=aggr_index.reset_index(drop=True)
+aggr_index.head()
+
+#use this index in a grouping operation. average all values with the same index
+validate=validate.iloc[0:aggr_index.shape[0],:]
+validate['aggr_ind']=aggr_index.values
+validate_agg=validate.groupby(['aggr_ind']).mean()
+
+#get a time index for the aggregated values - we use the last day for each 30 days that are being aggregated
+timevalidate=pd.DataFrame(validate.index)
+timevalidate['aggr_ind']=aggr_index.values
+timevalidate_agg=timevalidate.groupby(['aggr_ind']).tail(1)
+
+#assign this new time index to the aggregated dataframe
+validate_agg=validate_agg.set_index(timevalidate_agg['date'])
+# Gathered in monthly resolution
+residuals_agg_val = validate_agg['Precipitation']-validate_agg['Predict']
+
+
+############ Plotting
+## Train data
+# Calculate residuals
+residuals = train['flow']-train['Predict']
+
+fig, ax = plt.subplots(3, 1, sharex=True)
+ax[0].plot(train['Precipitation']);ax[0].set_ylabel('Rain')
+ax[1].plot(train['flow']);ax[1].set_ylabel('Flow')
+ax[1].plot(train['Predict'])
+ax[1].set_xlim(left=pd.to_datetime('2012'))
+ax[2].plot(residuals);ax[2].set_ylabel('Residuals')
+plt.suptitle('Train main plot')
+plt.show()
+
+fig, ax = plt.subplots(3, 1, sharex=True)
+ax[0].plot(train['Precipitation']);ax[0].set_ylabel('Rain')
+ax[1].plot(train['flow']);ax[1].set_ylabel('Flow')
+ax[1].plot(train['Predict'])
+ax[1].set_xlim(left=pd.to_datetime('2016'), right=pd.to_datetime('2017'))
+ax[2].plot(residuals);ax[2].set_ylabel('Residuals')
+plt.suptitle('Train  zoomed')
+plt.show()
 
 # Plot aggregated values
 fig, ax = plt.subplots(3, 1, sharex=True)
@@ -156,12 +196,8 @@ plt.suptitle('Precipitation vs. residuals - Train not aggregated')
 plt.show()
 
 
+####################################################
 ########## Validation plots
-#generate prediction from the model using the final parameter estimate
-pred_validate=simple_model(par_estimate_unscaled, pnames,validate)
-#Add the predicted values to the train data
-validate['Predict'] = pred_validate
-
 # Calculate residuals
 residuals_validate = validate['flow']-validate['Predict']
 
@@ -193,29 +229,6 @@ ax[2].plot(residuals_validate);ax[2].set_ylabel('Residuals')
 plt.suptitle('Validate - Peak 2')
 plt.show()
 
-#aggregate to monthly resolution 
-#create an index that for each day indicates whether it belongs to the first month, the second month, and so on
-factor=30
-aggr_index=pd.Series(range(int((validate.shape[0]+1)/factor)))
-aggr_index=aggr_index.repeat(factor)
-aggr_index=aggr_index.reset_index(drop=True)
-aggr_index.head()
-
-#use this index in a grouping operation. average all values with the same index
-validate=validate.iloc[0:aggr_index.shape[0],:]
-validate['aggr_ind']=aggr_index.values
-validate_agg=validate.groupby(['aggr_ind']).mean()
-
-#get a time index for the aggregated values - we use the last day for each 30 days that are being aggregated
-timevalidate=pd.DataFrame(validate.index)
-timevalidate['aggr_ind']=aggr_index.values
-timevalidate_agg=timevalidate.groupby(['aggr_ind']).tail(1)
-
-#assign this new time index to the aggregated dataframe
-validate_agg=validate_agg.set_index(timevalidate_agg['date'])
-# Gathered in monthly resolution
-residuals_agg_val = validate_agg['Precipitation']-validate_agg['Predict']
-
 # Plot aggregated values
 fig, ax = plt.subplots(3, 1, sharex=True,)
 ax[0].plot(validate_agg['Precipitation']);ax[0].set_ylabel('Rain')
@@ -227,15 +240,14 @@ plt.show()
 
 ###### Scatter aggregated values
 # Scatter obs. vs. residuals not aggregated
-slope, intercept, rvalue, pvalue, stderr = linregress(validate['flow'],validate['Predict'])
-plt.plot(validate['flow'], slope * validate['flow'] + intercept)
+
+plt.plot(validate['flow'], 1 * validate['flow'])
 plt.scatter(validate['flow'], validate['Predict'])
 plt.xlabel('Observation [mm/day]'); plt.ylabel('Predicted [mm/day]')
 plt.suptitle('Observation vs. Predicted - Validate not aggregated')
 plt.show()
 
 # Scatter obs. vs. residuals aggregated
-slope, intercept, rvalue, pvalue, stderr = linregress(validate_agg['Precipitation'],residuals_agg_val)
 plt.scatter(validate_agg['Precipitation'], residuals_agg_val)
 plt.xlabel('Precipitation'); plt.ylabel('Residuals')
 plt.axhline(y=0)
@@ -244,38 +256,21 @@ plt.show()
 # Scatter obs. vs. residuals not aggregated
 # Calculate residuals
 residuals_validate = validate['flow']-validate['Predict']
-slope, intercept, rvalue, pvalue, stderr = linregress(validate['Precipitation'],validate['Predict'])
 plt.axhline(y=0)
 plt.scatter(validate['Precipitation'], residuals_validate)
 plt.xlabel('Precipitation'); plt.ylabel('Residuals')
 plt.suptitle('Precipitation vs. residuals - Validate not aggregated')
 plt.show()
 
-
-############ Test plot
-pred_test=simple_model(par_estimate_unscaled, pnames,test)
-#Add the predicted values to the train data
-test['Predict'] = pred_test
-
-# Calculate residuals
-residuals_test = test['flow']-test['Predict']
- 
-fig, ax = plt.subplots(3, 1, sharex=True)
-ax[0].plot(test['Precipitation']);ax[0].set_ylabel('Rain')
-ax[1].plot(test['flow']);ax[1].set_ylabel('Flow')
-ax[1].plot(test['Predict'])
-ax[1].set_xlim(left=pd.to_datetime('2021'))
-ax[2].plot(residuals_test);ax[2].set_ylabel('Residuals')
-plt.suptitle('Test')
-plt.show()
-
-
+####################################################
 ## Residuals
 
+# Histogram
 plt.hist(residuals, bins = 15)
 plt.xlim(left = -30, right = 30)
 plt.show()
 
+# Autocorrelation
 from statsmodels.graphics import tsaplots
 tsaplots.plot_acf(residuals, lags=20)
 plt.show()
