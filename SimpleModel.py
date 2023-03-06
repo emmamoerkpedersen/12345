@@ -9,7 +9,6 @@ from LoadData import train, test, validate
 
 # Set Working directory
 datafolder=os.path.relpath(r'Data')
-
 data_in=pd.read_pickle('dataframe2.pkl')
 
 ####################################
@@ -24,12 +23,14 @@ def simple_model(par,pnames,data_input):
     cf=par[pnames.index('cf')] #crop factor for regulating ET
     outflow_u, states_u = lb.unit_soil_zone_storage(cf*data_input['PET'].to_numpy(),data_input['Precipitation'].to_numpy(),[Smaxsoil,msoil,betasoil,S0soil],return_ET=False)
     # Flow from other Y1C
+    global percolation
     Smax_Y1C=par[pnames.index('Smax_Y1C')];PERC=par[pnames.index('PERC')];k0=par[pnames.index('k0')]; k1=par[pnames.index('k1')];S0_s=par[pnames.index('S0_s')]
     outflow_Y1C, percolation ,states_Y1C = lb.unit_hbv_shallow_storage(data_input['flowY1C'].to_numpy(),[Smax_Y1C,PERC,k0,k1,S0_s])
     #####################
     #add shallow storage
+    global percolation_s
     Smax_s=par[pnames.index('Smax_s')]
-    outflow_s, percolation, states_s = lb.unit_hbv_shallow_storage(outflow_u,[Smax_s,PERC,k0,k1,S0_s])
+    outflow_s, percolation_s, states_s = lb.unit_hbv_shallow_storage(outflow_u,[Smax_s,PERC,k0,k1,S0_s])
     #print(outflow_u)
     #print(len(outflow_u))
     # add lower storage

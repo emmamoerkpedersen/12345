@@ -1,5 +1,5 @@
 from SimpleModel import simple_model, sse
-from LoadData import train, test, validate, data_Average
+from LoadData import train, test, validate
 import numpy as np
 import matplotlib.pyplot as plt
 import ddsoptim
@@ -17,7 +17,6 @@ p0={'Smaxsoil':10,'msoil':1,
     'PERC': 50, 'k0':15, 'k1':50, 
     'S0_s':1 ,'Smax_s':50, 
     'S0_l':100, 'k2':99}
-
 
 #convert dictionary to lists that are used as input to the model function
 pmin={'Smaxsoil':10,'msoil':0.3,
@@ -46,6 +45,7 @@ pscale={'Smaxsoil':1,'msoil':1,
         'S0_s':1 ,'Smax_s':1, 
         'S0_l':1, 'k2':1}
 
+
 pnames=list(p0.keys())
 p0=list(p0.values())
 pscale=list(pscale.values())
@@ -67,28 +67,22 @@ plt.plot(pd.Series(ssetrace).rolling(50).min().to_numpy())
 plt.xlabel('No. of iterations')
 plt.ylabel('SSE Error')
 
-
 ### To get a list of the estimated parameters and their value
 # Zip the names and values together
 estimated_par_zip = zip(pnames, par_estimate_unscaled)
-
 # Create a dictionary comprehension with the name-value tuples
 par_estimate_list = {pnames: par_estimate_unscaled for pnames, par_estimate_unscaled in estimated_par_zip}
 
 
 ############ Running the model and plotting
-
 ## Train data
-
 #generate prediction from the model using the final parameter estimate
 pred=simple_model(par_estimate_unscaled, pnames,train)
 #Add the predicted values to the train data
 train['Predict'] = pred
 
-
 # Calculate residuals
 residuals = train['flow']-train['Predict']
-
 
 fig, ax = plt.subplots(3, 1, sharex=True)
 ax[0].plot(train['Precipitation']);ax[0].set_ylabel('Rain')
@@ -273,4 +267,23 @@ ax[1].plot(test['Predict'])
 ax[1].set_xlim(left=pd.to_datetime('2021'))
 ax[2].plot(residuals_test);ax[2].set_ylabel('Residuals')
 plt.suptitle('Test')
+plt.show()
+
+
+## Residuals
+
+plt.hist(residuals, bins = 15)
+plt.xlim(left = -30, right = 30)
+plt.show()
+
+from statsmodels.graphics import tsaplots
+tsaplots.plot_acf(residuals, lags=20)
+plt.show()
+
+
+plt.hist(residuals_validate, bins = 15)
+plt.xlim(left = -30, right = 30)
+plt.show()
+
+tsaplots.plot_acf(residuals_validate, lags=20)
 plt.show()

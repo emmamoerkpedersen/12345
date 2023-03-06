@@ -91,7 +91,6 @@ flowY1C.iloc[:,1]=flowY1C.iloc[:,1]/area2*10**3 # convert to mm/d
 
 
 ################ TEST HVOR DATA IKKE ER LAVET OM IFT. REGN
-import matplotlib.pyplot as plt
 plt.rcParams.update({'font.size': 7})
 fig, ax = plt.subplots(8, 1, sharex=True)
 ax[0].plot(rain1['date'], rain1['value'], label = file_names[0], color = 'lightgreen');ax[0].set_ylabel('P [mm/d]')
