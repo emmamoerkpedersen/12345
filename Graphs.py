@@ -1,4 +1,4 @@
-#%%
+
 import os
 import numpy as np
 import pandas as pd
@@ -6,7 +6,6 @@ import matplotlib.pyplot as plt
 from LoadData import file_names
 
 df=pd.read_pickle('dataframe.pkl')
-
 
 ####################
 #plot time series
@@ -33,13 +32,12 @@ ax[5].legend(loc = 'upper right')
 ax[6].legend(loc = 'upper right')
 ax[7].legend(loc = 'upper right')
 plt.show()
-plt.savefig("C:/Users/magnu/OneDrive/Dokumenter/Kanddidat/2. Semester/Water modelling and observations/Github/12345")
+
 
 #### SCATTERPLOTS
-
 # Without altering the data
 plt.scatter(df['rain_WCHN'],df['flow'])
-
+plt.show()
 #aggregate to monthly resolution
 #create an index that for each day indicates whether it belongs to the first month, the second month, and so on
 factor=30
