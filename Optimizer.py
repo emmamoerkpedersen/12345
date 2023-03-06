@@ -10,7 +10,7 @@ from scipy.stats import linregress
 
 # DDS
 ## Set starting values, their ranges and scale
-p0={'Smaxsoil':1,'msoil':1,
+p0={'Smaxsoil':10,'msoil':1,
     'betasoil':19,'cf':0.5,
     'baseflow':3,'S0soil':10,
     'tp':2,'k':5,'Smax_Y1C':10, 
