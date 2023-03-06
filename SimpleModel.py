@@ -17,6 +17,8 @@ data_in=pd.read_pickle('dataframe2.pkl')
 #Inflow upper zone
 def simple_model(par,pnames,data_input):
     import lib_model as lb
+    global outflow_u, outflow_l, outflow_s, outflow_Y1C, baseflow
+    global states_l, states_s, states_u, states_Y1C
     # Soil storage
     Smaxsoil=par[pnames.index('Smaxsoil')];msoil=par[pnames.index('msoil')];betasoil=par[pnames.index('betasoil')];S0soil=par[pnames.index('S0soil')]
     cf=par[pnames.index('cf')] #crop factor for regulating ET
@@ -27,7 +29,7 @@ def simple_model(par,pnames,data_input):
     #####################
     #add shallow storage
     Smax_s=par[pnames.index('Smax_s')]
-    outflow_s, percolation, states_u = lb.unit_hbv_shallow_storage(outflow_u,[Smax_s,PERC,k0,k1,S0_s])
+    outflow_s, percolation, states_s = lb.unit_hbv_shallow_storage(outflow_u,[Smax_s,PERC,k0,k1,S0_s])
     #print(outflow_u)
     #print(len(outflow_u))
     # add lower storage
@@ -41,6 +43,7 @@ def simple_model(par,pnames,data_input):
     baseflow=par[pnames.index('baseflow')]
     #
     streamflow=streamflow+baseflow
+
     return(streamflow)
 
 
@@ -60,3 +63,4 @@ def sse(par_scale,pscale,pnames,data_input):
     
     
     return sse
+
