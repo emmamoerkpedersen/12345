@@ -66,7 +66,6 @@ for refet_number, refet_name in enumerate(refet_names):
 #define fields in file and datatype for each field
 area = 3791348073.82 #m2
 
-
 headers = ['date','value']
 dtypes = {'date': 'str', 'value': float}
 #read file
@@ -126,8 +125,23 @@ flow=flow.iloc[np.min(np.where(flow['date']>=startdate)):np.max(np.where(flow['d
 
 flowY1C=flowY1C.iloc[np.min(np.where(flowY1C['date']>=startdate)):np.max(np.where(flowY1C['date']<=enddate)),:]
 
+#G-RUN DATA
+#time series of average monthly runoff in mm/d
+runoff_GRUN = pd.read_csv(os.path.join(datafolder,'runoffseries.csv'), usecols=['Block3-Lower','Block3-Y1C'] ,sep=';')
 
- 
+areaY14 = 3791348074.963 #m²
+areaY1C = 2149033230.112 #m²
+
+runoff_GRUN['Block3-Lower']=runoff_GRUN['Block3-Lower']*areaY14
+runoff_GRUN['Block3-Y1C']=runoff_GRUN['Block3-Y1C']*areaY1C
+
+
+fig, ax = plt.subplots(2, 1, sharex=True)
+ax[0].plot(runoff_GRUN['Block3-Lower'], label= 'Block3-Lower G RUN data')
+ax[1].plot(runoff_GRUN['Block3-Y1C'], label= 'Block3-Y1C G RUN data')
+ax[0].legend(loc = 'upper right')
+ax[1].legend(loc = 'upper right')
+plt.show()
 
 ####################
 # Create dataframe
@@ -135,7 +149,7 @@ flowY1C=flowY1C.iloc[np.min(np.where(flowY1C['date']>=startdate)):np.max(np.wher
 
 from functools import reduce
 #combine textfiles into one dataframes
-data_frames = [refet1, refet2, refet3, refet4, rain1, rain2, rain3, rain4, rain5, rain6, rain7, flow, flowY1C ]
+data_frames = [refet1, refet2, refet3, refet4, rain1, rain2, rain3, rain4, rain5, rain6, rain7, flow, flowY1C]
 
 data_all = reduce(lambda  left,right: pd.merge(left,right,on='date',how='outer'), data_frames)
 data_all.columns = ['date','PET_351201','PET_330201','PET_328202', 'PET_328201', 'rain_CHHA', 'rain_DCCT', 'rain_TGLG', 'rain_WCHN', 'rain_NMKI', 'rain_MMMO', 'rain_SPPT', 'flow', 'flowY1C']
@@ -178,4 +192,8 @@ data_Average.interpolate(method='linear',inplace=True)
 #####################
 #save dataframe as pickled file
 data_Average.to_pickle('dataframe2.pkl')
+
+
+
+
 
