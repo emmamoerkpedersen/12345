@@ -48,12 +48,14 @@ def sse(par_scale,pscale,pnames, data_input):
     #extract the flow observations and convert them from pandas series
     #to numpy vector (predictions are also generated as numpy vector)
     flobs= data_input['flow'].to_numpy()
-    flobs=flobs
+
+    train_index = [182, 2697]
+    validate_index = [2698, 3388]
     # Calculate sse for training
-    sse=np.nansum(np.power(np.subtract(flobs[10:2000],pred[10:2000]),2))
+    sse=np.nansum(np.power(np.subtract(flobs[train_index[0]:train_index[1]],pred[train_index[0]:train_index[1]]),2))/2515
     
     global sse_trace_val
-    sse_val=np.nansum(np.power(np.subtract(flobs[2000:3000],pred[2000:3000]),2))
+    sse_val=(np.nansum(np.power(np.subtract(flobs[validate_index[0]:validate_index[1]],pred[validate_index[0]:validate_index[1]]),2)))/690
     sse_trace_val.append(sse_val)
 
     print(sse)

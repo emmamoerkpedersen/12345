@@ -58,19 +58,23 @@ pmax=np.array(list(pmax.values()))
 
 # Split data into train, validate and test. First half year is warm up hence the index 182
 train, validate, test = train_validate_test_split(data_in[182:])
+# Get the indices where train and validate start. The numbers are used in SSE
+train_index = [data_in.index.get_loc(str(train.index[0].date())), data_in.index.get_loc(str(train.index[-1].date()))]
+validate_index = [data_in.index.get_loc(str(validate.index[0].date())), data_in.index.get_loc(str(validate.index[-1].date()))]
 
 #call ddsoptim - see ddsoptim.py for an explanation of the input arguments
-par_estimate_unscaled,ssetrace=ddsoptim.ddsoptim(sse,p0,pmax,pmin,10000,0.2,True,pscale,pnames,train)
+par_estimate_unscaled,ssetrace=ddsoptim.ddsoptim(sse,p0,pmax,pmin,6711,0.2,True,pscale,pnames,data_in)
 #best parameter value
 np.nanmin(ssetrace)
 np.nanmin(sse_trace_val)
 #with dds the objective function is very noisy due to random sampling of parameters. we can compute a rolling min to
 #see how the model fit improves with increasing number of iterations
-plt.plot(pd.Series(ssetrace).rolling(50).min().to_numpy())
-plt.plot(pd.Series(sse_trace_val).rolling(50).min().to_numpy())
+plt.plot((pd.Series(ssetrace).rolling(50).min().to_numpy()), label = 'Train data')
+plt.plot((pd.Series(sse_trace_val).rolling(500).min().to_numpy()), label = 'Validation')
 plt.xlabel('No. of iterations')
-plt.ylabel('SSE Error')
-
+plt.ylabel('MSE Error')
+plt.legend()
+plt.show()
 ### To get a list of the estimated parameters and their value
 # Zip the names and values together
 estimated_par_zip = zip(pnames, par_estimate_unscaled)
@@ -145,7 +149,24 @@ validate_agg=validate_agg.set_index(timevalidate_agg['date'])
 residuals_agg_val = validate_agg['Precipitation']-validate_agg['Predict']
 
 
-############ Plotting
+############ Plotting all data and prediction
+pred_all=simple_model(par_estimate_unscaled, pnames,data_in)
+data_in['Predict'] = pred_all
+residuals_all = data_in['flow']-data_in['Predict']
+
+fig, ax = plt.subplots(3, 1, sharex=True)
+ax[0].plot(data_in['Precipitation']);ax[0].set_ylabel('Rain')
+ax[1].plot(data_in['flow']);ax[1].set_ylabel('Flow')
+ax[1].plot(data_in['Predict'])
+ax[1].set_xlim(left=pd.to_datetime('2011-08'))
+ax[2].plot(residuals_all);ax[2].set_ylabel('Residuals')
+plt.suptitle('Main')
+ax[1].axvline(x=pd.to_datetime('2012-03-29'), color='k', linestyle='--') # train period
+ax[1].axvline(x=pd.to_datetime('2019-02-15'), color='k', linestyle='--') # validate period
+ax[1].axvline(x=pd.to_datetime('2021-02-03'), color='k', linestyle='--') # Test period
+plt.show()
+
+
 ## wTrain data
 # Calculate residuals
 residuals = wTrain['flow']-wTrain['Predict']
@@ -157,6 +178,7 @@ ax[1].plot(wTrain['Predict'])
 ax[1].set_xlim(left=pd.to_datetime('2011-08'))
 ax[2].plot(residuals);ax[2].set_ylabel('Residuals')
 plt.suptitle('wTrain main plot')
+ax[1].axvline(x=pd.to_datetime('2012-03-29'), color='k', linestyle='--') # Warmup period
 plt.show()
 
 fig, ax = plt.subplots(3, 1, sharex=True)
@@ -265,6 +287,20 @@ plt.xlabel('Precipitation'); plt.ylabel('Residuals')
 plt.suptitle('Precipitation vs. residuals - Validate not aggregated')
 plt.show()
 
+
+####################################################
+## Test
+pred_test=simple_model(par_estimate_unscaled, pnames,test)
+test['Predict'] = pred_test
+residuals_test = test['flow']-test['Predict']
+
+fig, ax = plt.subplots(3, 1, sharex=True)
+ax[0].plot(test['Precipitation']);ax[0].set_ylabel('Rain')
+ax[1].plot(test['flow']);ax[1].set_ylabel('Flow')
+ax[1].plot(test['Predict'])
+ax[2].plot(residuals_test);ax[2].set_ylabel('Residuals')
+plt.suptitle('test main plot')
+plt.show()
 ####################################################
 ## Residuals
 
@@ -284,4 +320,11 @@ plt.xlim(left = -30, right = 30)
 plt.show()
 
 tsaplots.plot_acf(residuals_validate, lags=20)
+plt.show()
+
+plt.hist(residuals_test, bins = 15)
+plt.xlim(left = -10, right = 10)
+plt.show()
+
+tsaplots.plot_acf(residuals_test, lags=20)
 plt.show()
