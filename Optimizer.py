@@ -1,4 +1,4 @@
-from SimpleModel import simple_model, sse, train_validate_test_split
+from SimpleModel import simple_model, sse, train_validate_test_split, sse_trace_val
 import numpy as np
 import matplotlib.pyplot as plt
 import ddsoptim
@@ -59,14 +59,15 @@ pmax=np.array(list(pmax.values()))
 # Split data into train, validate and test. First half year is warm up hence the index 182
 train, validate, test = train_validate_test_split(data_in[182:])
 
-
 #call ddsoptim - see ddsoptim.py for an explanation of the input arguments
-par_estimate_unscaled,ssetrace=ddsoptim.ddsoptim(sse,p0,pmax,pmin,7500,0.2,True,pscale,pnames,train)
+par_estimate_unscaled,ssetrace=ddsoptim.ddsoptim(sse,p0,pmax,pmin,10000,0.2,True,pscale,pnames,train)
 #best parameter value
 np.nanmin(ssetrace)
+np.nanmin(sse_trace_val)
 #with dds the objective function is very noisy due to random sampling of parameters. we can compute a rolling min to
 #see how the model fit improves with increasing number of iterations
 plt.plot(pd.Series(ssetrace).rolling(50).min().to_numpy())
+plt.plot(pd.Series(sse_trace_val).rolling(50).min().to_numpy())
 plt.xlabel('No. of iterations')
 plt.ylabel('SSE Error')
 
@@ -79,9 +80,11 @@ par_estimate_list = {pnames: par_estimate_unscaled for pnames, par_estimate_unsc
 ####################################################
 ############ Run the model for train and validation
 #generate prediction from the model using the final parameter estimate
-pred=simple_model(par_estimate_unscaled, pnames,train)
+wTrain = data_in.loc['2011-09-29':'2019-01-21']
+
+pred=simple_model(par_estimate_unscaled, pnames, wTrain) # INCLUDE WARMUP
 #Add the predicted values to the train data
-train['Predict'] = pred
+wTrain['Predict'] = pred
 
 #generate prediction from the model using the final parameter estimate
 pred_validate=simple_model(par_estimate_unscaled, pnames,validate)
@@ -96,25 +99,25 @@ validate['Predict'] = pred_validate
 #aggregate to monthly resolution
 #create an index that for each day indicates whether it belongs to the first month, the second month, and so on
 factor=30
-aggr_index=pd.Series(range(int((train.shape[0]+1)/factor)))
+aggr_index=pd.Series(range(int((wTrain.shape[0]+1)/factor)))
 aggr_index=aggr_index.repeat(factor)
 aggr_index=aggr_index.reset_index(drop=True)
 aggr_index.head()
 
 #use this index in a grouping operation. average all values with the same index
-train=train.iloc[0:aggr_index.shape[0],:]
-train['aggr_ind']=aggr_index.values
-train_agg=train.groupby(['aggr_ind']).mean()
+wTrain=wTrain.iloc[0:aggr_index.shape[0],:]
+wTrain['aggr_ind']=aggr_index.values
+wTrain_agg=wTrain.groupby(['aggr_ind']).mean()
 
 #get a time index for the aggregated values - we use the last day for each 30 days that are being aggregated
-timetrain=pd.DataFrame(train.index)
-timetrain['aggr_ind']=aggr_index.values
-timetrain_agg=timetrain.groupby(['aggr_ind']).tail(1)
+timewTrain=pd.DataFrame(wTrain.index)
+timewTrain['aggr_ind']=aggr_index.values
+timewTrain_agg=timewTrain.groupby(['aggr_ind']).tail(1)
 
 #assign this new time index to the aggregated dataframe
-train_agg=train_agg.set_index(timetrain_agg['date'])
+wTrain_agg=wTrain_agg.set_index(timewTrain_agg['date'])
 # Gathered in monthly resolution
-residuals_agg = train_agg['Precipitation']-train_agg['Predict']
+residuals_agg = wTrain_agg['Precipitation']-wTrain_agg['Predict']
 
 
 ############ Validate
@@ -143,53 +146,53 @@ residuals_agg_val = validate_agg['Precipitation']-validate_agg['Predict']
 
 
 ############ Plotting
-## Train data
+## wTrain data
 # Calculate residuals
-residuals = train['flow']-train['Predict']
+residuals = wTrain['flow']-wTrain['Predict']
 
 fig, ax = plt.subplots(3, 1, sharex=True)
-ax[0].plot(train['Precipitation']);ax[0].set_ylabel('Rain')
-ax[1].plot(train['flow']);ax[1].set_ylabel('Flow')
-ax[1].plot(train['Predict'])
-ax[1].set_xlim(left=pd.to_datetime('2012'))
+ax[0].plot(wTrain['Precipitation']);ax[0].set_ylabel('Rain')
+ax[1].plot(wTrain['flow']);ax[1].set_ylabel('Flow')
+ax[1].plot(wTrain['Predict'])
+ax[1].set_xlim(left=pd.to_datetime('2011-08'))
 ax[2].plot(residuals);ax[2].set_ylabel('Residuals')
-plt.suptitle('Train main plot')
+plt.suptitle('wTrain main plot')
 plt.show()
 
 fig, ax = plt.subplots(3, 1, sharex=True)
-ax[0].plot(train['Precipitation']);ax[0].set_ylabel('Rain')
-ax[1].plot(train['flow']);ax[1].set_ylabel('Flow')
-ax[1].plot(train['Predict'])
+ax[0].plot(wTrain['Precipitation']);ax[0].set_ylabel('Rain')
+ax[1].plot(wTrain['flow']);ax[1].set_ylabel('Flow')
+ax[1].plot(wTrain['Predict'])
 ax[1].set_xlim(left=pd.to_datetime('2016'), right=pd.to_datetime('2017'))
 ax[2].plot(residuals);ax[2].set_ylabel('Residuals')
-plt.suptitle('Train  zoomed')
+plt.suptitle('wTrain  zoomed')
 plt.show()
 
 # Plot aggregated values
 fig, ax = plt.subplots(3, 1, sharex=True)
-ax[0].plot(train_agg['Precipitation']);ax[0].set_ylabel('Rain')
-ax[1].plot(train_agg['flow']);ax[1].set_ylabel('Flow')
-ax[1].plot(train_agg['Predict'])
+ax[0].plot(wTrain_agg['Precipitation']);ax[0].set_ylabel('Rain')
+ax[1].plot(wTrain_agg['flow']);ax[1].set_ylabel('Flow')
+ax[1].plot(wTrain_agg['Predict'])
 ax[2].plot(residuals_agg);ax[2].set_ylabel('Residuals')
-plt.suptitle('Train aggregated values main plot')
+plt.suptitle('wTrain aggregated values main plot')
 plt.show()
 
 # Scatter obs. vs. residuals not aggregated
-plt.plot(train['flow'], 1 * train['flow'])
-plt.scatter(train['flow'], train['Predict'])
+plt.plot(wTrain['flow'], 1 * wTrain['flow'])
+plt.scatter(wTrain['flow'], wTrain['Predict'])
 plt.xlabel('Observation [mm/day]'); plt.ylabel('Predicted [mm/day]')
 plt.suptitle('Observation vs. Predicted - Train not aggregated')
 plt.show()
 
 # Scatter obs. vs. residuals aggregated
-plt.scatter(train_agg['Precipitation'], residuals_agg)
+plt.scatter(wTrain_agg['Precipitation'], residuals_agg)
 plt.xlabel('Precipitation'); plt.ylabel('Residuals')
 plt.axhline(y=0)
-plt.suptitle('Precipitation vs. residuals - Train aggregated')
+plt.suptitle('Precipitation vs. residuals - wTrain aggregated')
 plt.show()
 # Scatter obs. vs. residuals not aggregated
-residuals = train['Precipitation']-train['Predict']
-plt.scatter(train['Precipitation'], residuals)
+residuals = wTrain['Precipitation']-wTrain['Predict']
+plt.scatter(wTrain['Precipitation'], residuals)
 plt.axhline(y=0)
 plt.xlabel('Observed values'); plt.ylabel('Predicted values')
 plt.suptitle('Precipitation vs. residuals - Train not aggregated')

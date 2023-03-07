@@ -36,9 +36,10 @@ def simple_model(par,pnames,data_input):
 
     return(streamflow)
 
-
+sse_trace_val = []
 ##### SSE ###
-def sse(par_scale,pscale,pnames,data_input):
+def sse(par_scale,pscale,pnames, data_input):
+    import pandas as pd
     #convert the scaled coefficients back to their original values
     par_unscale=[x*y for x,y in zip(par_scale,pscale)]
     #call the model function to generate a prediction for the given set of
@@ -48,10 +49,18 @@ def sse(par_scale,pscale,pnames,data_input):
     #to numpy vector (predictions are also generated as numpy vector)
     flobs= data_input['flow'].to_numpy()
     flobs=flobs
-    sse=np.nansum(np.power(np.subtract(flobs,pred),2))
+    # Calculate sse for training
+    sse=np.nansum(np.power(np.subtract(flobs[10:2000],pred[10:2000]),2))
+    
+    global sse_trace_val
+    sse_val=np.nansum(np.power(np.subtract(flobs[2000:3000],pred[2000:3000]),2))
+    sse_trace_val.append(sse_val)
+
     print(sse)
+    print(len(sse_trace_val))
 
     return sse
+
 
 ###### splitting in train, val and test data
 def train_validate_test_split(df, train_percent=.7, validate_percent=.2, seed=None):
