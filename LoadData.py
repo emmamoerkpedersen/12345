@@ -1,19 +1,22 @@
+
 import os
 import datetime as dt
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 # Set Working directory
-
+os.chdir('/Users/emmamork/Library/CloudStorage/OneDrive-DanmarksTekniskeUniversitet/Observation Modeling and Management of Water Sytstems/Assigment/12345')
 datafolder=os.path.relpath(r'Data')
+
+
 
 ##########read rainfall files
 #define fields in file and datatype for each field
 headers = ['date','time', 'value']
 dtypes = {'date': 'str','date': 'str', 'value': float}
-#read file
 file_names = ['CHHA.csv', 'DCCT.csv', 'TGLG.csv', 'WCHN.csv', 'NMKI.csv', 'MMMO.csv', 'SPPT.csv' ]
 
+rainDict = {}
 # Load all 5 Rain stations
 for file_number, file_name in enumerate(file_names):
     rain = pd.read_csv(os.path.join(datafolder,file_name),sep=',',skiprows=1,header=None,names=headers,dtype=dtypes)
@@ -28,19 +31,18 @@ for file_number, file_name in enumerate(file_names):
     rain['date'] = rain.index
     rain=rain.reset_index(drop=True)
 
-    variable_name = f"rain{file_number + 1}"
-    globals()[variable_name] = rain
+    # Save all rain data in dictionary
+    rainDict[f'rain{file_number+1}'] = rain
 
+####################################
+##############read evaporation files
 
-
-########read evaporation files
 #define fields in file and datatype for each field
+refet_names = ['351201.xlsx', '330201.xlsx', '328202.xlsx','328201.xlsx']
 headers = ['date','value']
 dtypes = {'date': 'str', 'value': float}
 
-refet_names = ['351201.xlsx', '330201.xlsx', '328202.xlsx','328201.xlsx']
-
-#read files
+refetDict = {}
 
 for refet_number, refet_name in enumerate(refet_names):
     refet=pd.read_excel(os.path.join(datafolder,refet_name),skiprows=1,header=None,names=headers,dtype=dtypes)
@@ -58,13 +60,14 @@ for refet_number, refet_name in enumerate(refet_names):
     refet['date']=refet.index
     refet=refet.reset_index(drop=True)
 
+    refetDict[f'refet{refet_number+1}'] = refet
 
-    variable_refet = f'refet{refet_number + 1}'
-    globals()[variable_refet] = refet
 
-#########read flow series
-#define fields in file and datatype for each field
-area = 3791348073.82 #m2
+####################################
+##############read flow series
+
+## Y14 flow
+areaY14 = 3791348074.963 #m²
 
 headers = ['date','value']
 dtypes = {'date': 'str', 'value': float}
@@ -73,64 +76,35 @@ flow=pd.read_csv(os.path.join(datafolder,'Y14-Q.txt'),sep=';',skiprows=3,header=
 flow.iloc[:,0]=pd.to_datetime(flow.iloc[:,0],format='%Y-%m-%d %H:%M:%S')
 flow['date']=[dt.datetime(x.year,x.month,x.day) for x in flow['date']] #remove time information from the flow dates
 flow.iloc[:,1]=flow.iloc[:,1]*86400.0 #convert m3/s to m3/d
-flow.iloc[:,1]=flow.iloc[:,1]/area*10**3 # convert to mm/d
+flow.iloc[:,1]=flow.iloc[:,1]/areaY14*10**3 # convert to mm/d
 
-#######Read Y1C flow:
-
-area2 = 2149033230.112 #m2
-
-headers = ['date','value']
-dtypes = {'date': 'str', 'value': float}
+## Y1C flow: 
+areaY1C = 2149033230.112 #m²
 #read file
 flowY1C=pd.read_csv(os.path.join(datafolder,'Y1C-Q.txt'),sep=';',skiprows=3,header=None,names=headers,dtype=dtypes)
 flowY1C.iloc[:,0]=pd.to_datetime(flowY1C.iloc[:,0],format='%Y-%m-%d %H:%M:%S')
 flowY1C['date']=[dt.datetime(x.year,x.month,x.day) for x in flowY1C['date']] #remove time information from the flow dates
 flowY1C.iloc[:,1]=flowY1C.iloc[:,1]*86400.0 #convert m3/s to m3/d
-flowY1C.iloc[:,1]=flowY1C.iloc[:,1]/area2*10**3 # convert to mm/d
+flowY1C.iloc[:,1]=flowY1C.iloc[:,1]/areaY1C*10**3 # convert to mm/d
 
-
-################ TEST HVOR DATA IKKE ER LAVET OM IFT. REGN
-plt.rcParams.update({'font.size': 7})
-fig, ax = plt.subplots(8, 1, sharex=True)
-ax[0].plot(rain1['date'], rain1['value'], label = file_names[0], color = 'lightgreen');ax[0].set_ylabel('P [mm/d]')
-ax[1].plot(rain2['date'], rain2['value'], label = file_names[1], color = 'forestgreen');ax[1].set_ylabel('P [mm/d]')
-ax[2].plot(rain3['date'], rain3['value'], label = file_names[2], color = 'limegreen');ax[2].set_ylabel('P [mm/d]')
-ax[3].plot(rain4['date'], rain4['value'], label = file_names[3], color = 'darkgreen');ax[3].set_ylabel('P [mm/d]')
-ax[4].plot(rain5['date'], rain5['value'], label = file_names[4], color = 'darkgreen');ax[4].set_ylabel('P [mm/d]')
-ax[5].plot(rain6['date'], rain6['value'], label = file_names[5], color = 'darkgreen');ax[5].set_ylabel('P [mm/d]')
-ax[6].plot(rain7['date'], rain7['value'], label = file_names[6], color = 'darkgreen');ax[6].set_ylabel('P [mm/d]')
-ax[7].plot(flow['date'], flow['value'],label='Flow');ax[7].set_ylabel('Q [mm/d]')
-plt.xlabel('Time [days]')
-ax[0].legend(loc = 'upper right')
-ax[1].legend(loc = 'upper right')
-ax[2].legend(loc = 'upper right')
-ax[3].legend(loc = 'upper right')
-ax[4].legend(loc = 'upper right')
-ax[5].legend(loc = 'upper right')
-ax[6].legend(loc = 'upper right')
-ax[7].legend(loc = 'upper right')
-plt.show()
-
+####################################
 #### Remake so all DataFrames have same time index (compared to rain)
 
 startdate=rain['date'][np.min(np.where(np.logical_not(rain['value'].isna()))[0])]
 enddate=rain['date'][rain.shape[0]-1]
-#clip the refet and flow series
-refet1=refet1.iloc[np.min(np.where(refet1['date']>=startdate)):np.max(np.where(refet1['date']<=enddate)),:]
-refet2=refet2.iloc[np.min(np.where(refet2['date']>=startdate)):np.max(np.where(refet2['date']<=enddate)),:]
-refet3=refet3.iloc[np.min(np.where(refet3['date']>=startdate)):np.max(np.where(refet3['date']<=enddate)),:]
-refet4=refet4.iloc[np.min(np.where(refet4['date']>=startdate)):np.max(np.where(refet4['date']<=enddate)),:]
+
+#clip the refet and flow series to rain
+for i, (key, values) in enumerate(refetDict.items()):
+    refetDict[key] = refetDict[key].iloc[np.min(np.where(refetDict[key]['date']>=startdate)):np.max(np.where(refetDict[key]['date']<=enddate)),:]
 
 flow=flow.iloc[np.min(np.where(flow['date']>=startdate)):np.max(np.where(flow['date']<=enddate)),:]
-
 flowY1C=flowY1C.iloc[np.min(np.where(flowY1C['date']>=startdate)):np.max(np.where(flowY1C['date']<=enddate)),:]
 
-#G-RUN DATA
-#time series of average monthly runoff in mm/d
-runoff_GRUN = pd.read_csv(os.path.join(datafolder,'runoffseries.csv'), usecols=['Block3-Lower','Block3-Y1C'] ,sep=';')
 
-areaY14 = 3791348074.963 #m²
-areaY1C = 2149033230.112 #m²
+####################################
+G-RUN DATA
+time series of average monthly runoff in mm/d
+runoff_GRUN = pd.read_csv(os.path.join(datafolder,'runoffseries.csv'), usecols=['Block3-Lower','Block3-Y1C'] ,sep=';')
 
 runoff_GRUN['Block3-Lower']=runoff_GRUN['Block3-Lower']*areaY14
 runoff_GRUN['Block3-Y1C']=runoff_GRUN['Block3-Y1C']*areaY1C
@@ -143,35 +117,46 @@ ax[0].legend(loc = 'upper right')
 ax[1].legend(loc = 'upper right')
 plt.show()
 
-####################
-# Create dataframe
 
+####################################
+# Merge into one dataframe
 
 from functools import reduce
-#combine textfiles into one dataframes
-data_frames = [refet1, refet2, refet3, refet4, rain1, rain2, rain3, rain4, rain5, rain6, rain7, flow, flowY1C]
 
-data_all = reduce(lambda  left,right: pd.merge(left,right,on='date',how='outer'), data_frames)
+dict1_merged = reduce(lambda left, right: pd.merge(left, right, on='date', how='outer'), [dict1['date'], dict1['df1'], dict1['df2']])
+dict2_merged = reduce(lambda left, right: pd.merge(left, right, on='date', how='outer'), [dict2['date'], dict2['df1'], dict2['df2']])
+
+
+#combine textfiles into one dataframes
+test = [refetDict, rainDict]
+
+
+# create a list of DataFrames from the dictionaries
+refetPD = [pd.DataFrame(d) for d in refetDict.values()]
+rainPD = [pd.DataFrame(d) for d in rainDict.values()]
+# use reduce and pd.merge to merge the DataFrames into a single DataFrame
+merged_refet = reduce(lambda left, right: pd.merge(left, right, on='date', how='outer'), refetPD)
+merged_rain = reduce(lambda left, right: pd.merge(left, right, on='date', how='outer'), rainPD)
+
+data_all = reduce(lambda left, right: pd.merge(left, right, on='date', how='outer'), [merged_refet, merged_rain, flow, flowY1C])
+
+# rename the columns to the keys of the original dictionaries
 data_all.columns = ['date','PET_351201','PET_330201','PET_328202', 'PET_328201', 'rain_CHHA', 'rain_DCCT', 'rain_TGLG', 'rain_WCHN', 'rain_NMKI', 'rain_MMMO', 'rain_SPPT', 'flow', 'flowY1C']
 
 data_all.set_index('date',inplace=True)
-
-
 data_all.interpolate(method='linear',inplace=True)
-#####################
+
 #save dataframe as pickled file
 data_all.to_pickle('dataframe.pkl')
 
 
-
+####################################
 # New dataframe with weighted average
-PET = ['PET_351201','PET_330201','PET_328202', 'PET_328201']
-rain = ['rain_CHHA', 'rain_DCCT', 'rain_TGLG', 'rain_WCHN', 'rain_NMKI', 'rain_MMMO', 'rain_SPPT']
 
 #Calculate average
 areasP = np.array([865216821,665778630,383284467.2,785339562.5, 131465617.03602804, 170280882.42145243, 150530436.137325912714005])
-Pcatchment = pd.DataFrame((areasP[0]*data_all['rain_CHHA']+areasP[1]*data_all['rain_DCCT']+areasP[2]*data_all['rain_MMMO']+areasP[3]*data_all['rain_NMKI']
-                           +areasP[4]*data_all['rain_SPPT']+areasP[5]*data_all['rain_TGLG']+areasP[6]*data_all['rain_WCHN'])/np.sum(areasP), columns = ['value'])
+
+Pcatchment = pd.DataFrame((areasP[0]*data_all['rain_CHHA']+areasP[1]*data_all['rain_DCCT']+areasP[2]*data_all['rain_MMMO']+areasP[3]*data_all['rain_NMKI']+areasP[4]*data_all['rain_SPPT']+areasP[5]*data_all['rain_TGLG']+areasP[6]*data_all['rain_WCHN'])/np.sum(areasP), columns = ['value'])
 
 
 areasPET = np.array([632073506, 443472572, 2017865143, 697936853 ])
@@ -181,19 +166,26 @@ PETcatchment = pd.DataFrame((areasPET[0]*data_all['PET_328201']+areasPET[1]*data
 data_frames2 = [Pcatchment, PETcatchment, flow, flowY1C]
 data_Average = reduce(lambda  left,right: pd.merge(left,right,on='date',how='outer'), data_frames2)
 data_Average.columns = ['date', 'Precipitation', 'PET', 'flow', 'flowY1C']
-
 data_Average.set_index('date',inplace=True)
 
-
-#####################
 #fill remaining missing values by linear interpolation
 #this requires that the data have been properly checked before and that there is no bigger gaps that need to be treated manually!
 data_Average.interpolate(method='linear',inplace=True)
-#####################
+
 #save dataframe as pickled file
 data_Average.to_pickle('dataframe2.pkl')
 
 
+############### Rain + Flow plot
+fig, axes = plt.subplots(nrows=len(rainDict)+1, ncols=1, sharex=True)
+for i, (key, values) in enumerate(rainDict.items()):
+    ax = axes[i]
+    ax.plot(values['date'], values['value'], label = key)
+    ax.legend(loc = 'upper right')
 
+axes[len(rainDict)].plot(flow['date'], flow['value'], label = 'Flow')
+axes[len(rainDict)].legend(loc = 'upper right')
 
-
+fig.text(0.04, 0.5, 'P [mm/d]', ha='center', va='center', rotation='vertical')
+plt.xlabel('Time [days]')
+plt.show()
