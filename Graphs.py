@@ -5,38 +5,27 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from LoadData import file_names
 
-df=pd.read_pickle('dataframe.pkl')
+df=pd.read_pickle('dataframe2.pkl')
 
 ####################
 #plot time series
-import matplotlib.pyplot as plt
+
 plt.rcParams.update({'font.size': 7})
 
-
-fig, ax = plt.subplots(8, 1, sharex=True)
-ax[0].plot(df['rain_CHHA'], label = file_names[0], color = 'lightgreen');ax[0].set_ylabel('P [mm/d]')
-ax[1].plot(df['rain_DCCT'], label = file_names[1], color = 'limegreen');ax[1].set_ylabel('P [mm/d]')
-ax[2].plot(df['rain_TGLG'], label = file_names[2], color = 'darkgreen');ax[2].set_ylabel('P [mm/d]')
-ax[3].plot(df['rain_WCHN'], label = file_names[3], color = 'green');ax[3].set_ylabel('P [mm/d]')
-ax[4].plot(df['rain_NMKI'], label = file_names[4], color = 'green');ax[4].set_ylabel('P [mm/d]')
-ax[5].plot(df['rain_MMMO'], label = file_names[5], color = 'green');ax[5].set_ylabel('P [mm/d]')
-ax[6].plot(df['rain_SPPT'], label = file_names[6], color = 'green');ax[6].set_ylabel('P [mm/d]')
-ax[7].plot(df['flow'],label='Flow');ax[7].set_ylabel('Q [mm/d]')
+# Plot all the data together
+fig, axes = plt.subplots(nrows=len(df.columns), ncols=1, sharex=True)
+for i, key in enumerate(df.columns):
+    ax = axes[i]
+    ax.plot(df[key], label = key)
+    ax.legend(loc = 'upper right')
+fig.text(0.04, 0.5, '[mm/d]', ha='center', va='center', rotation='vertical')
 plt.xlabel('Time [days]')
-ax[0].legend(loc = 'upper right')
-ax[1].legend(loc = 'upper right')
-ax[2].legend(loc = 'upper right')
-ax[3].legend(loc = 'upper right')
-ax[4].legend(loc = 'upper right')
-ax[5].legend(loc = 'upper right')
-ax[6].legend(loc = 'upper right')
-ax[7].legend(loc = 'upper right')
 plt.show()
 
 
 #### SCATTERPLOTS
 # Without altering the data
-plt.scatter(df['rain_WCHN'],df['flow'])
+plt.scatter(df['Precipitation'],df['flow'])
 plt.show()
 #aggregate to monthly resolution
 #create an index that for each day indicates whether it belongs to the first month, the second month, and so on
@@ -59,15 +48,15 @@ timedf_agg=timedf.groupby(['aggr_ind']).tail(1)
 #assign this new time index to the aggregated dataframe
 df_agg=df_agg.set_index(timedf_agg['date'])
 # Gathered in monthly resolution
-plt.scatter(df_agg['rain_WCHN'],df_agg['flow'])
+plt.scatter(df_agg['Precipitation'],df_agg['flow'])
 plt.show()
 
 #extract values for summer months (april to november) only and plot
 select=np.logical_and(np.array(df_agg.index.month)>4,np.array(df_agg.index.month)<11)
 # Only summer months
-plt.scatter(df_agg['rain_WCHN'][select],df_agg['flow'][select])
+plt.scatter(df_agg['Precipitation'][select],df_agg['flow'][select])
 plt.show()
 # Cross correlation
 
-plt.xcorr(df['flow'], df['rain_WCHN'], maxlags = 20)
+plt.xcorr(df['flow'], df['Precipitation'], maxlags = 20)
 plt.show()

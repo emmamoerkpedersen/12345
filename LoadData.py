@@ -5,7 +5,6 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 # Set Working directory
-os.chdir('/Users/emmamork/Library/CloudStorage/OneDrive-DanmarksTekniskeUniversitet/Observation Modeling and Management of Water Sytstems/Assigment/12345')
 datafolder=os.path.relpath(r'Data')
 
 
@@ -122,15 +121,6 @@ plt.show()
 # Merge into one dataframe
 
 from functools import reduce
-
-dict1_merged = reduce(lambda left, right: pd.merge(left, right, on='date', how='outer'), [dict1['date'], dict1['df1'], dict1['df2']])
-dict2_merged = reduce(lambda left, right: pd.merge(left, right, on='date', how='outer'), [dict2['date'], dict2['df1'], dict2['df2']])
-
-
-#combine textfiles into one dataframes
-test = [refetDict, rainDict]
-
-
 # create a list of DataFrames from the dictionaries
 refetPD = [pd.DataFrame(d) for d in refetDict.values()]
 rainPD = [pd.DataFrame(d) for d in rainDict.values()]
