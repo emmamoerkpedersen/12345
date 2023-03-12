@@ -102,8 +102,8 @@ flowY1C=flowY1C.iloc[np.min(np.where(flowY1C['date']>=startdate)):np.max(np.wher
 
 
 ####################################
-G-RUN DATA
-time series of average monthly runoff in mm/d
+# G-RUN DATA
+# time series of average monthly runoff in mm/d
 runoff_GRUN = pd.read_csv(os.path.join(datafolder,'runoffseries.csv'), usecols=['Block3-Lower','Block3-Y1C'] ,sep=';')
 
 runoff_GRUN['Block3-Lower']=runoff_GRUN['Block3-Lower']*areaY14
