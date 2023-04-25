@@ -62,6 +62,7 @@ train, validate, test = train_validate_test_split(data_in[182:])
 train_index = [data_in.index.get_loc(str(train.index[0].date())), data_in.index.get_loc(str(train.index[-1].date()))]
 validate_index = [data_in.index.get_loc(str(validate.index[0].date())), data_in.index.get_loc(str(validate.index[-1].date()))]
 
+
 ####################################################
 
 #call ddsoptim - see ddsoptim.py for an explanation of the input arguments
@@ -121,10 +122,25 @@ for i in range(len(liste)):
       ax[2].plot(residuals);ax[2].set_ylabel('Residuals')
       plt.suptitle(liste_names[i])
       if liste_names[i] == 'All data':
-            ax[1].axvline(x=pd.to_datetime('2012-03-29'), color='k', linestyle='--') # train period
-            ax[1].axvline(x=pd.to_datetime('2019-02-15'), color='k', linestyle='--') # validate period
-            ax[1].axvline(x=pd.to_datetime('2021-02-03'), color='k', linestyle='--') # Test period
-            plt.show()
+             # Shade areas for different data periods
+             ax[1].axvspan(pd.to_datetime('2011-10-01'), pd.to_datetime('2012-03-29'), facecolor='red', alpha=0.2)  # Warmup period
+             ax[1].axvspan(pd.to_datetime('2012-03-29'), pd.to_datetime('2019-02-15'), facecolor='blue', alpha=0.2)  # Train period
+             ax[1].axvspan(pd.to_datetime('2019-02-15'), pd.to_datetime('2021-02-03'), facecolor='green', alpha=0.2)  # Validate period
+             ax[1].axvspan(pd.to_datetime('2021-02-03'), pd.to_datetime('2022-01-01'), facecolor='orange', alpha=0.2)  # Test period
+
+        # Create legend patches
+             warmup_patch = mpatches.Patch(color='red', alpha=0.2, label='Warmup')
+             train_patch = mpatches.Patch(color='blue', alpha=0.2, label='Train')
+             validate_patch = mpatches.Patch(color='green', alpha=0.2, label='Validate')
+             test_patch = mpatches.Patch(color='orange', alpha=0.2, label='Test')
+
+        # Add legend to the plot
+             ax[1].legend(handles=[warmup_patch, train_patch, validate_patch, test_patch],loc='upper left')
+             #ax[1].axvline(x=pd.to_datetime('2012-03-29'), color='k', linestyle='--') # train period
+             #ax[1].axvline(x=pd.to_datetime('2019-02-15'), color='k', linestyle='--') # validate period
+             #ax[1].axvline(x=pd.to_datetime('2021-02-03'), color='k', linestyle='--') # Test period
+             plt.show()
+      
       elif liste_names[i] == 'Warmup and Train':
             ax[1].axvline(x=pd.to_datetime('2012-03-29'), color='k', linestyle='--') # Warmup period
             plt.show()
@@ -186,6 +202,8 @@ wTrain_agg, validate_agg, test_agg = train_validate_test_split(data_in_agg[:182]
 residuals_agg = wTrain_agg['Precipitation']-wTrain_agg['Predict']
 residuals_agg_val = validate_agg['Precipitation']-validate_agg['Predict']
 residuals_agg_test = test_agg['Precipitation']-test_agg['Predict']
+residuals_agg_all = data_in_agg['Precipitation']-data_in_agg['Predict']
+
 
 #########################################
 ## Plot aggregated values
@@ -258,7 +276,6 @@ ax[1].set_xlim(left=pd.to_datetime('2020-05'), right = pd.to_datetime('2020-10')
 ax[2].plot(residuals_validate);ax[2].set_ylabel('Residuals')
 plt.suptitle('Validate - Peak 2')
 plt.show()
-
 
 
 
