@@ -1,9 +1,9 @@
-from SimpleModel import simple_model, sse, train_validate_test_split, sse_trace_val
 import numpy as np
 import matplotlib.pyplot as plt
 import ddsoptim
 import pandas as pd
 
+from SimpleModel import simple_model, sse, train_validate_test_split, sse_trace_val
 
 ####################################################
 # Load data
@@ -175,98 +175,108 @@ for i in range(len(liste)):
 
 ####################################################
 ############ Aggregated the data and split again
-factor=30
-aggr_index=pd.Series(range(int((data_in.shape[0]+1)/factor)))
-aggr_index=aggr_index.repeat(factor)
-aggr_index=aggr_index.reset_index(drop=True)
-aggr_index.head()
+# factor=30
+# aggr_index=pd.Series(range(int((data_in.shape[0]+1)/factor)))
+# aggr_index=aggr_index.repeat(factor)
+# aggr_index=aggr_index.reset_index(drop=True)
+# aggr_index.head()
 
-#use this index in a grouping operation. average all values with the same index
-data_in=data_in.iloc[0:aggr_index.shape[0],:]
-data_in['aggr_ind']=aggr_index.values
-data_in_agg=data_in.groupby(['aggr_ind']).mean()
+# #use this index in a grouping operation. average all values with the same index
+# data_in=data_in.iloc[0:aggr_index.shape[0],:]
+# data_in['aggr_ind']=aggr_index.values
+# data_in_agg=data_in.groupby(['aggr_ind']).mean()
 
-#get a time index for the aggregated values - we use the last day for each 30 days that are being aggregated
-timeData=pd.DataFrame(data_in.index)
-timeData['aggr_ind']=aggr_index.values
-timeData_agg=timeData.groupby(['aggr_ind']).tail(1)
+# #get a time index for the aggregated values - we use the last day for each 30 days that are being aggregated
+# timeData=pd.DataFrame(data_in.index)
+# timeData['aggr_ind']=aggr_index.values
+# timeData_agg=timeData.groupby(['aggr_ind']).tail(1)
 
-#assign this new time index to the aggregated dataframe
-data_in_agg=data_in_agg.set_index(timeData_agg['date'])
+# #assign this new time index to the aggregated dataframe
+# data_in_agg=data_in_agg.set_index(timeData_agg['date'])
 # Gathered in monthly resolution
 
 # Split the aggregated data into train+warmup, validate and test
-wTrain_agg, validate_agg, test_agg = train_validate_test_split(data_in_agg[:182])
+# wTrain_agg, validate_agg, test_agg = train_validate_test_split(data_in_agg[:182])
 
-# Calculate residuals for the aggregated data
-residuals_agg = wTrain_agg['Precipitation']-wTrain_agg['Predict']
-residuals_agg_val = validate_agg['Precipitation']-validate_agg['Predict']
-residuals_agg_test = test_agg['Precipitation']-test_agg['Predict']
+# # Calculate residuals for the aggregated data
+# residuals_agg = wTrain_agg['Precipitation']-wTrain_agg['Predict']
+# residuals_agg_val = validate_agg['Precipitation']-validate_agg['Predict']
+# residuals_agg_test = test_agg['Precipitation']-test_agg['Predict']
 residuals_agg_all = data_in_agg['Precipitation']-data_in_agg['Predict']
 
 
 #########################################
 ## Plot aggregated values
-liste_agg = [data_in_agg, wTrain_agg , validate_agg, test_agg]
-liste_names = ['All data monthly', 'Warmup and Train monthly' , 'Validate monthly', 'Test monthly']
+# liste_agg = [data_in_agg, wTrain_agg , validate_agg, test_agg]
+# liste_names = ['All data monthly', 'Warmup and Train monthly' , 'Validate monthly', 'Test monthly']
 
-for i in range(len(liste)):
-      pred=simple_model(par_estimate_unscaled, pnames, liste_agg[i])
-      liste_agg[i]['Predict'] = pred
-      residuals = liste_agg[i]['flow']-liste_agg[i]['Predict']
+# for i in range(len(liste)):
+#       pred=simple_model(par_estimate_unscaled, pnames, liste_agg[i])
+#       liste_agg[i]['Predict'] = pred
+#       residuals = liste_agg[i]['flow']-liste_agg[i]['Predict']
 
-      # Plots of aggregated data
-      fig, ax = plt.subplots(3, 1, sharex=True)
-      ax[0].plot(liste_agg[i]['Precipitation']);ax[0].set_ylabel('Rain')
-      ax[1].plot(liste_agg[i]['flow']);ax[1].set_ylabel('Flow')
-      ax[1].plot(liste_agg[i]['Predict'])
-      #ax[1].set_xlim(left=pd.to_datetime('2011-08'))
-      ax[2].plot(residuals);ax[2].set_ylabel('Residuals')
-      plt.suptitle(liste_names[i])
-      if liste_names[i] == 'All data monthly':
-            ax[1].axvline(x=pd.to_datetime('2012-03-29'), color='k', linestyle='--') # train period
-            ax[1].axvline(x=pd.to_datetime('2019-02-15'), color='k', linestyle='--') # validate period
-            ax[1].axvline(x=pd.to_datetime('2021-02-03'), color='k', linestyle='--') # Test period
-            plt.show()
-      elif liste_names[i] == 'Warmup and Train montly':
-            ax[1].axvline(x=pd.to_datetime('2012-03-29'), color='k', linestyle='--') # Warmup period
-            plt.show()
-      else:
-            plt.show()
+#       # Plots of aggregated data
+#       fig, ax = plt.subplots(3, 1, sharex=True)
+#       ax[0].plot(liste_agg[i]['Precipitation']);ax[0].set_ylabel('Rain')
+#       ax[1].plot(liste_agg[i]['flow']);ax[1].set_ylabel('Flow')
+#       ax[1].plot(liste_agg[i]['Predict'])
+#       #ax[1].set_xlim(left=pd.to_datetime('2011-08'))
+#       ax[2].plot(residuals);ax[2].set_ylabel('Residuals')
+#       plt.suptitle(liste_names[i])
+#       if liste_names[i] == 'All data monthly':
+#             ax[1].axvline(x=pd.to_datetime('2012-03-29'), color='k', linestyle='--') # train period
+#             ax[1].axvline(x=pd.to_datetime('2019-02-15'), color='k', linestyle='--') # validate period
+#             ax[1].axvline(x=pd.to_datetime('2021-02-03'), color='k', linestyle='--') # Test period
+#             plt.show()
+#       elif liste_names[i] == 'Warmup and Train montly':
+#             ax[1].axvline(x=pd.to_datetime('2012-03-29'), color='k', linestyle='--') # Warmup period
+#             plt.show()
+#       else:
+#             plt.show()
       
-      # Scatterplots of aggregated data
-      plt.scatter(liste_agg[i]['Precipitation'], residuals)
-      plt.xlabel('Precipitation'); plt.ylabel('Residuals')
-      plt.axhline(y=0)
-      plt.suptitle(f'Precipitation vs. residuals - {liste_names[i]} monthly')
-      plt.show()
+#       # Scatterplots of aggregated data
+#       plt.scatter(liste_agg[i]['Precipitation'], residuals)
+#       plt.xlabel('Precipitation'); plt.ylabel('Residuals')
+#       plt.axhline(y=0)
+#       plt.suptitle(f'Precipitation vs. residuals - {liste_names[i]} monthly')
+#       plt.show()
 
 #########################################
 # Calculate residuals
-residuals = wTrain['Precipitation']-wTrain['Predict']
-residuals_validate = validate['flow']-validate['Predict']
-residuals_test = test['Precipitation']-test['Predict']
+# residuals = wTrain['Precipitation']-wTrain['Predict']
+# residuals_validate = validate['flow']-validate['Predict']
+# residuals_test = test['Precipitation']-test['Predict']
 
-## Plot zoomed 
-## wTrain data
-fig, ax = plt.subplots(3, 1, sharex=True)
-ax[0].plot(wTrain['Precipitation']);ax[0].set_ylabel('Rain')
-ax[1].plot(wTrain['flow']);ax[1].set_ylabel('Flow')
-ax[1].plot(wTrain['Predict'])
-ax[1].set_xlim(left=pd.to_datetime('2016'), right=pd.to_datetime('2017'))
-ax[2].plot(residuals);ax[2].set_ylabel('Residuals')
-plt.suptitle('wTrain  zoomed')
-plt.show()
+# ## Plot zoomed 
+# ## wTrain data
+# fig, ax = plt.subplots(3, 1, sharex=True)
+# ax[0].plot(wTrain['Precipitation']);ax[0].set_ylabel('Rain')
+# ax[1].plot(wTrain['flow']);ax[1].set_ylabel('Flow')
+# ax[1].plot(wTrain['Predict'])
+# ax[1].set_xlim(left=pd.to_datetime('2016'), right=pd.to_datetime('2017'))
+# ax[2].plot(residuals);ax[2].set_ylabel('Residuals')
+# plt.suptitle('wTrain  zoomed')
+# plt.show()
 
-#### Validate
-fig, ax = plt.subplots(3, 1, sharex=True)
-ax[0].plot(validate['Precipitation']);ax[0].set_ylabel('Rain')
-ax[1].plot(validate['flow']);ax[1].set_ylabel('Flow')
-ax[1].plot(validate['Predict'])
-ax[1].set_xlim(left=pd.to_datetime('2019-05'), right = pd.to_datetime('2019-11'))
-ax[2].plot(residuals_validate);ax[2].set_ylabel('Residuals')
-plt.suptitle('Validate - Peak 1')
-plt.show()
+# #### Validate
+# fig, ax = plt.subplots(3, 1, sharex=True)
+# ax[0].plot(validate['Precipitation']);ax[0].set_ylabel('Rain')
+# ax[1].plot(validate['flow']);ax[1].set_ylabel('Flow')
+# ax[1].plot(validate['Predict'])
+# ax[1].set_xlim(left=pd.to_datetime('2019-05'), right = pd.to_datetime('2019-11'))
+# ax[2].plot(residuals_validate);ax[2].set_ylabel('Residuals')
+# plt.suptitle('Validate - Peak 1')
+# plt.show()
+
+# fig, ax = plt.subplots(3, 1, sharex=True)
+# ax[0].plot(validate['Precipitation']);ax[0].set_ylabel('Rain')
+# ax[1].plot(validate['flow']);ax[1].set_ylabel('Flow')
+# ax[1].plot(validate['Predict'])
+# ax[1].set_xlim(left=pd.to_datetime('2020-05'), right = pd.to_datetime('2020-10'))
+# ax[2].plot(residuals_validate);ax[2].set_ylabel('Residuals')
+# plt.suptitle('Validate - Peak 2')
+# plt.show()
+
 
 fig, ax = plt.subplots(3, 1, sharex=True)
 ax[0].plot(validate['Precipitation']);ax[0].set_ylabel('Rain')
