@@ -129,16 +129,16 @@ for i in range(len(liste)):
              ax[1].axvspan(pd.to_datetime('2021-02-03'), pd.to_datetime('2022-01-01'), facecolor='orange', alpha=0.2)  # Test period
 
         # Create legend patches
-             warmup_patch = mpatches.Patch(color='red', alpha=0.2, label='Warmup')
-             train_patch = mpatches.Patch(color='blue', alpha=0.2, label='Train')
-             validate_patch = mpatches.Patch(color='green', alpha=0.2, label='Validate')
-             test_patch = mpatches.Patch(color='orange', alpha=0.2, label='Test')
+             #warmup_patch = mpatches.Patch(color='red', alpha=0.2, label='Warmup')
+             #train_patch = mpatches.Patch(color='blue', alpha=0.2, label='Train')
+             #validate_patch = mpatches.Patch(color='green', alpha=0.2, label='Validate')
+             #test_patch = mpatches.Patch(color='orange', alpha=0.2, label='Test')
 
         # Add legend to the plot
-             ax[1].legend(handles=[warmup_patch, train_patch, validate_patch, test_patch],loc='upper left')
-             #ax[1].axvline(x=pd.to_datetime('2012-03-29'), color='k', linestyle='--') # train period
-             #ax[1].axvline(x=pd.to_datetime('2019-02-15'), color='k', linestyle='--') # validate period
-             #ax[1].axvline(x=pd.to_datetime('2021-02-03'), color='k', linestyle='--') # Test period
+             #ax[1].legend(handles=[warmup_patch, train_patch, validate_patch, test_patch],loc='upper left')
+             ax[1].axvline(x=pd.to_datetime('2012-03-29'), color='k', linestyle='--') # train period
+             ax[1].axvline(x=pd.to_datetime('2019-02-15'), color='k', linestyle='--') # validate period
+             ax[1].axvline(x=pd.to_datetime('2021-02-03'), color='k', linestyle='--') # Test period
              plt.show()
       
       elif liste_names[i] == 'Warmup and Train':
