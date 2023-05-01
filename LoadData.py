@@ -167,7 +167,7 @@ data_Average.to_pickle('dataframe2.pkl')
 
 
 ############### Rain + Flow plot
-fig, axes = plt.subplots(nrows=len(rainDict)+1, ncols=1, sharex=True)
+fig, axes = plt.subplots(nrows=len(rainDict)+1, ncols=1, sharex=True, figsize = (15,8))
 for i, (key, values) in enumerate(rainDict.items()):
     ax = axes[i]
     ax.plot(values['date'], values['value']) #label = key

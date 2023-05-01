@@ -22,8 +22,8 @@ def simple_model(par,pnames,data_input):
     #print(len(outflow_u))
 
     # add lower storage
-    #S0_l = par[pnames.index('S0_l')]; k2 = par[pnames.index('k2')]
-    #outflow_l, states_l = lb.unit_hbv_lower_storage(outflow_s,[S0_l,k2]) 
+    # S0_l = par[pnames.index('S0_l')]; k2 = par[pnames.index('k2')]
+    # outflow_l, states_l = lb.unit_hbv_lower_storage(outflow_s,[S0_l,k2]) 
     #
     tp=par[pnames.index('tp')];k=par[pnames.index('k')]
     # Modelling transport
