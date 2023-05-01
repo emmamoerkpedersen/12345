@@ -292,6 +292,15 @@ residuals_test = test['flow']-test['Predict']
 # plt.suptitle('Validate - Peak 2')
 # plt.show()
 
+# Calcualte NSE
+obs = test['flow']
+pred = test['Predict']
+mean_obs = test['flow'].mean()
+
+numerator = np.sum((obs - pred) ** 2)
+denominator = np.sum((obs - mean_obs) ** 2)
+
+nse = 1 - (numerator / denominator)
 
 
 
