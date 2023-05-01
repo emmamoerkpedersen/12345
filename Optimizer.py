@@ -2,7 +2,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import ddsoptim
 import pandas as pd
-
 from SimpleModel import simple_model, sse, train_validate_test_split, sse_trace_val
 
 ####################################################
@@ -66,7 +65,7 @@ validate_index = [data_in.index.get_loc(str(validate.index[0].date())), data_in.
 ####################################################
 
 #call ddsoptim - see ddsoptim.py for an explanation of the input arguments
-par_estimate_unscaled,ssetrace=ddsoptim.ddsoptim(sse,p0,pmax,pmin,2000,0.2,True,pscale,pnames,data_in)
+par_estimate_unscaled,ssetrace=ddsoptim.ddsoptim(sse,p0,pmax,pmin,2500,0.2,True,pscale,pnames,data_in)
 #best parameter value
 np.nanmin(ssetrace)
 np.nanmin(sse_trace_val)
@@ -103,8 +102,8 @@ validate['Predict'] = pred_validate
 
 
 ############ Plotting
-liste = [data_in, wTrain , validate, test]
-liste_names = ['All data', 'Warmup and Train' , 'Validate', 'Test']
+liste = [data_in, test]
+liste_names = ['All data', 'Test']
 
 for i in range(len(liste)):
       # Run the model and predict values
@@ -173,7 +172,6 @@ for i in range(len(liste)):
 
       ## Plot Autocorrelation for residuals
       from statsmodels.graphics import tsaplots
-      plt.figure(figsize=(10,8))
       tsaplots.plot_acf(residuals, lags=20)
       plt.suptitle(f'Autocorrelation for {liste_names[i]} residuals')
       plt.show()
