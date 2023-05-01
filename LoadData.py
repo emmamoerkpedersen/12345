@@ -170,8 +170,14 @@ data_Average.to_pickle('dataframe2.pkl')
 fig, axes = plt.subplots(nrows=len(rainDict)+1, ncols=1, sharex=True)
 for i, (key, values) in enumerate(rainDict.items()):
     ax = axes[i]
-    ax.plot(values['date'], values['value'], label = key)
-    ax.legend(loc = 'upper right')
+    ax.plot(values['date'], values['value']) #label = key
+    # Shade areas for different data periods
+    ax.axvspan(pd.to_datetime('2011-10-01'), pd.to_datetime('2012-03-29'), facecolor='red', alpha=0.2)  # Warmup period
+    ax.axvspan(pd.to_datetime('2012-03-29'), pd.to_datetime('2019-02-15'), facecolor='blue', alpha=0.2)  # Train period
+    ax.axvspan(pd.to_datetime('2019-02-15'), pd.to_datetime('2021-02-03'), facecolor='green', alpha=0.2)  # Validate period
+    ax.axvspan(pd.to_datetime('2021-02-03'), pd.to_datetime('2022-01-01'), facecolor='orange', alpha=0.2)  # Test period
+
+    #ax.legend(loc = 'upper right')
 
 axes[len(rainDict)].plot(flow['date'], flow['value'], label = 'Flow')
 axes[len(rainDict)].legend(loc = 'upper right')
