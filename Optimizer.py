@@ -66,7 +66,7 @@ validate_index = [data_in.index.get_loc(str(validate.index[0].date())), data_in.
 ####################################################
 
 #call ddsoptim - see ddsoptim.py for an explanation of the input arguments
-par_estimate_unscaled,ssetrace=ddsoptim.ddsoptim(sse,p0,pmax,pmin,2500,0.2,True,pscale,pnames,data_in)
+par_estimate_unscaled,ssetrace=ddsoptim.ddsoptim(sse,p0,pmax,pmin,2000,0.2,True,pscale,pnames,data_in)
 #best parameter value
 np.nanmin(ssetrace)
 np.nanmin(sse_trace_val)
@@ -76,6 +76,7 @@ plt.show()
 #see how the model fit improves with increasing number of iterations
 plt.plot((pd.Series(ssetrace).rolling(500).mean().to_numpy()), label = 'Train data')
 plt.plot((pd.Series(sse_trace_val).rolling(500).mean().to_numpy()), label = 'Validation')
+plt.xlim(500, 2000)
 plt.xlabel('No. of iterations')
 plt.ylabel('MSE Error')
 plt.legend()
@@ -114,7 +115,7 @@ for i in range(len(liste)):
       residuals = liste[i]['flow']-liste[i]['Predict']
 
       ## Plot containing precipitation, obs vs. pred and residuals
-      fig, ax = plt.subplots(3, 1, sharex=True)
+      fig, ax = plt.subplots(3, 1, sharex=True, figsize = (15,8))
       ax[0].plot(liste[i]['Precipitation']);ax[0].set_ylabel('Rain')
       ax[1].plot(liste[i]['flow']);ax[1].set_ylabel('Flow')
       ax[1].plot(liste[i]['Predict'])
@@ -148,6 +149,7 @@ for i in range(len(liste)):
             plt.show()
 
       # Scatterplots Observation vs. predict
+      plt.figure(figsize=(10,8))
       plt.plot(liste[i]['flow'], 1*liste[i]['flow'])
       plt.scatter(liste[i]['flow'], liste[i]['Predict'])
       plt.xlabel('Observation [mm/day]'); plt.ylabel('Predicted [mm/day]')
@@ -155,6 +157,7 @@ for i in range(len(liste)):
       plt.show()
 
       ## Scatterplots precipitations vs. residuals
+      plt.figure(figsize=(10,8))
       plt.scatter(liste[i]['Precipitation'], residuals)
       plt.xlabel('Precipitation'); plt.ylabel('Residuals')
       plt.axhline(y=0)
@@ -162,6 +165,7 @@ for i in range(len(liste)):
       plt.show()
       
       ## Plot histogram for residuals
+      plt.figure(figsize=(10,8))
       residuals = liste[i]['flow']-liste[i]['Predict']
       plt.hist(residuals, bins = 15)
       plt.suptitle(f'Histogram for {liste_names[i]} residuals')
@@ -169,6 +173,7 @@ for i in range(len(liste)):
 
       ## Plot Autocorrelation for residuals
       from statsmodels.graphics import tsaplots
+      plt.figure(figsize=(10,8))
       tsaplots.plot_acf(residuals, lags=20)
       plt.suptitle(f'Autocorrelation for {liste_names[i]} residuals')
       plt.show()
@@ -202,7 +207,7 @@ for i in range(len(liste)):
 # residuals_agg = wTrain_agg['Precipitation']-wTrain_agg['Predict']
 # residuals_agg_val = validate_agg['Precipitation']-validate_agg['Predict']
 # residuals_agg_test = test_agg['Precipitation']-test_agg['Predict']
-residuals_agg_all = data_in_agg['Precipitation']-data_in_agg['Predict']
+#residuals_agg_all = data_in_agg['Precipitation']-data_in_agg['Predict']
 
 
 #########################################
@@ -243,9 +248,9 @@ residuals_agg_all = data_in_agg['Precipitation']-data_in_agg['Predict']
 
 #########################################
 # Calculate residuals
-# residuals = wTrain['Precipitation']-wTrain['Predict']
-# residuals_validate = validate['flow']-validate['Predict']
-# residuals_test = test['Precipitation']-test['Predict']
+residuals = wTrain['flow']-wTrain['Predict']
+residuals_validate = validate['flow']-validate['Predict']
+residuals_test = test['flow']-test['Predict']
 
 # ## Plot zoomed 
 # ## wTrain data
@@ -278,14 +283,14 @@ residuals_agg_all = data_in_agg['Precipitation']-data_in_agg['Predict']
 # plt.show()
 
 
-fig, ax = plt.subplots(3, 1, sharex=True)
-ax[0].plot(validate['Precipitation']);ax[0].set_ylabel('Rain')
-ax[1].plot(validate['flow']);ax[1].set_ylabel('Flow')
-ax[1].plot(validate['Predict'])
-ax[1].set_xlim(left=pd.to_datetime('2020-05'), right = pd.to_datetime('2020-10'))
-ax[2].plot(residuals_validate);ax[2].set_ylabel('Residuals')
-plt.suptitle('Validate - Peak 2')
-plt.show()
+# fig, ax = plt.subplots(3, 1, sharex=True)
+# ax[0].plot(validate['Precipitation']);ax[0].set_ylabel('Rain')
+# ax[1].plot(validate['flow']);ax[1].set_ylabel('Flow')
+# ax[1].plot(validate['Predict'])
+# ax[1].set_xlim(left=pd.to_datetime('2020-05'), right = pd.to_datetime('2020-10'))
+# ax[2].plot(residuals_validate);ax[2].set_ylabel('Residuals')
+# plt.suptitle('Validate - Peak 2')
+# plt.show()
 
 
 
